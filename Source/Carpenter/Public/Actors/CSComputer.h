@@ -3,7 +3,9 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "CSBaseItemActor.h"
 #include "Actors/CSBaseInteractiableActor.h"
+#include "Components/CSAcitonComponent.h"
 #include "CSComputer.generated.h"
 
 class UWidgetComponent;
@@ -13,6 +15,10 @@ UCLASS()
 class CARPENTER_API ACSComputer : public ACSBaseInteractiableActor
 {
 	GENERATED_BODY()
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components" , meta = (AllowPrivateAccess = "true"))
+	UCSAcitonComponent* ActionComp;
+	
 public:
 	ACSComputer();
 

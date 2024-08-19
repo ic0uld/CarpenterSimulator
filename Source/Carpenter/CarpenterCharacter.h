@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Components/CSAcitonComponent.h"
 #include "GameFramework/Character.h"
 #include "CarpenterCharacter.generated.h"
 
@@ -27,6 +28,9 @@ class ACarpenterCharacter : public ACharacter
 	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
     UCSInteractionComponent* InteractionComponent;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components" , meta = (AllowPrivateAccess = "true"))
+	UCSAcitonComponent* ActionComp;
 
 
 

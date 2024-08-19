@@ -3,31 +3,33 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "GameplayTagContainer.h"
 #include "Components/ActorComponent.h"
 #include "CSAcitonComponent.generated.h"
 
-class USAction;
+class UCSAction;
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnActionStateChanged, UCSAcitonComponent*, OwningComp, USAction*, Action);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnActionStateChanged, UCSAcitonComponent*, OwningComp, UCSAction*, Action);
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class CARPENTER_API UCSAcitonComponent : public UActorComponent
 {
 	GENERATED_BODY()
+
 public:	
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Tags")
 	FGameplayTagContainer ActiveGameplayTags;
 
 	UFUNCTION(BlueprintCallable, Category = "Actions")
-	void AddAction(AActor* Instigator, TSubclassOf<USAction> ActionClass);
+	void AddAction(AActor* Instigator, TSubclassOf<UCSAction> ActionClass);
 
 	UFUNCTION(BlueprintCallable, Category = "Actions")
-	void RemoveAction(USAction* ActionToRemove);
+	void RemoveAction(UCSAction* ActionToRemove);
 
 	/* Returns first occurrence of action matching the class provided */
 	UFUNCTION(BlueprintCallable, Category = "Actions")
-	USAction* GetAction(TSubclassOf<USAction> ActionClass) const;
+	UCSAction* GetAction(TSubclassOf<UCSAction> ActionClass) const;
 
 	UFUNCTION(BlueprintCallable, Category = "Actions")
 	bool StartActionByName(AActor* Instigator, FName ActionName);
@@ -35,7 +37,7 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Actions")
 	bool StopActionByName(AActor* Instigator, FName ActionName);
 
-	USActionComponent();
+	UCSAcitonComponent();
 
 protected:
 
@@ -47,10 +49,10 @@ protected:
 
 	/* Granted abilities at game start */
 	UPROPERTY(EditAnywhere, Category = "Actions")
-	TArray<TSubclassOf<USAction>> DefaultActions;
+	TArray<TSubclassOf<UCSAction>> DefaultActions;
 
 	UPROPERTY(BlueprintReadOnly, Replicated)
-	TArray<USAction*> Actions;
+	TArray<UCSAction*> Actions;
 
 	virtual void BeginPlay() override;
 

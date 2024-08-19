@@ -41,6 +41,8 @@ ACarpenterCharacter::ACarpenterCharacter()
 	Mesh1P->CastShadow = false;
 	Mesh1P->SetRelativeRotation(FRotator(1.9f, -19.19f, 5.2f));
 	Mesh1P->SetRelativeLocation(FVector(-0.5f, -4.4f, -155.7f));
+	
+	ActionComp = CreateDefaultSubobject<UCSAcitonComponent>("ActionComp");
 
 	// Create a InteractıonComponent
 	InteractionComponent= CreateDefaultSubobject<UCSInteractionComponent>("InteractionComponent");

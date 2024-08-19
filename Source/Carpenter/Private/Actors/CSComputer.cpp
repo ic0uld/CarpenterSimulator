@@ -3,6 +3,7 @@
 
 #include "Actors/CSComputer.h"
 #include "Actors/CSBaseItemActor.h"
+#include "Components/CSAcitonComponent.h"
 #include "Components/WidgetComponent.h"
 #include "Net/UnrealNetwork.h"
 
@@ -12,6 +13,8 @@ ACSComputer::ACSComputer()
     
     ScreenUI = CreateDefaultSubobject<UWidgetComponent>("ScreenUI");
     ScreenUI->SetupAttachment(RootComponent);
+
+    ActionComp = CreateDefaultSubobject<UCSAcitonComponent>("ActionComp");
 }
 
 void ACSComputer::RequestSpawnActor(const FVector& Location, const FRotator& Rotation, const FName& ItemName, UStaticMesh* StaticMesh)
