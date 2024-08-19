@@ -17,16 +17,23 @@ public:
 
 	void PrimaryInteract();
 
+	UFUNCTION(Server, Reliable)
+	void ServerEquippedItem();
+
+	UPROPERTY()
+	AActor* OnFocuActor;
+
+	UPROPERTY()
+	AActor* EquippedItem;
+
+	
+
 protected:
 
 	UFUNCTION(Server, Reliable)
 	void ServerInteract(AActor* InFocus);
 
 	void FindCloseActor();
-	
-
-	UPROPERTY()
-	AActor* OnFocuActor;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Trace")
 	float TraceDistance;

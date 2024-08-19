@@ -2,12 +2,12 @@
 
 using UnrealBuildTool;
 
-public class Carpenter : ModuleRules
+public class  Carpenter : ModuleRules
 {
 	public Carpenter(ReadOnlyTargetRules Target) : base(Target)
 	{
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 
-		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "HeadMountedDisplay" });
+		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "GameplayTasks", "UMG", "GameplayTags", "HeadMountedDisplay" });
 	}
 }

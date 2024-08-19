@@ -7,5 +7,5 @@
 @RD /S /Q "Releases"
 @RD /S /Q "DerivedDataCache"
 @RD /S /Q ".vs"
-@DEL "VRGKVirtualRealityGameKit.sln"
+@DEL "Carpenter.sln"
 

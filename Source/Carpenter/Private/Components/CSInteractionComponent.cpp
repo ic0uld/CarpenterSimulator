@@ -4,6 +4,7 @@
 #include "Components/CSInteractionComponent.h"
 
 #include "DrawDebugHelpers.h"
+#include "Carpenter/CarpenterCharacter.h"
 #include "Interfaces/CSGameplayInterface.h"
 #include "UI/SWorldUserWidget.h"
 
@@ -14,19 +15,51 @@ UCSInteractionComponent::UCSInteractionComponent()
 	// Set this component to be initialized when the game starts, and to be ticked every frame.  You can turn these features
 	// off to improve performance if you don't need them.
 	PrimaryComponentTick.bCanEverTick = true;
+	
+	PrimaryComponentTick.TickGroup = TG_PostUpdateWork;
 
 	TraceRadius = 30.0f;
 	TraceDistance = 500.0f;
 	CollisionChannel = ECC_WorldDynamic;
+
+	EquippedItem = nullptr;
 	
 }
 
 void UCSInteractionComponent::PrimaryInteract()
 {
+
+	ServerInteract(OnFocuActor);
+	
 }
 
 void UCSInteractionComponent::ServerInteract_Implementation(AActor* InFocus)
 {
+	if (InFocus == nullptr)
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 1.0f, FColor::Red, "No Actor");
+		return;
+	}
+
+	APawn* MyPawn = Cast<APawn>(GetOwner());
+	ICSGameplayInterface::Execute_Interact(InFocus, MyPawn);
+}
+
+void UCSInteractionComponent::ServerEquippedItem_Implementation()
+{
+	APawn* MyPawn = Cast<APawn>(GetOwner());
+	ACarpenterCharacter* PlayerCharacter = Cast<ACarpenterCharacter>(MyPawn);
+	
+	if (PlayerCharacter)
+	{
+		if (USkeletalMeshComponent* SkeletalMesh = PlayerCharacter ? PlayerCharacter->Mesh1P : nullptr)
+		{
+			FAttachmentTransformRules AttachmentRules(EAttachmentRule::SnapToTarget, EAttachmentRule::SnapToTarget, EAttachmentRule::KeepRelative, true);
+			OnFocuActor->AttachToComponent(PlayerCharacter->GetMesh1P(), AttachmentRules, PlayerCharacter->GetMesh1P()->GetSocketBoneName("ItemSnapLocation"));;
+			OnFocuActor = EquippedItem;
+		
+		}
+	}
 }
 
 void UCSInteractionComponent::FindCloseActor()
@@ -52,7 +85,7 @@ void UCSInteractionComponent::FindCloseActor()
 
 	FColor LineColor = bBlockingHit ? FColor::Yellow : FColor::Red;
 
-	// Clear ref before trying to fill
+	//// Clear ref before trying to fill////
 	OnFocuActor = nullptr;
 
 	for (FHitResult Hit : Hits)
