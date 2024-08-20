@@ -9,9 +9,6 @@ ACSBaseInteractiableActor::ACSBaseInteractiableActor()
  	
 	PrimaryActorTick.bCanEverTick = true;
 
-	bReplicates = true;
-	bAlwaysRelevant = true;
-
 	BaseMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("BaseMesh"));
 	RootComponent = BaseMesh;
 

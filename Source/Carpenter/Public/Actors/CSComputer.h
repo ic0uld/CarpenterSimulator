@@ -22,8 +22,17 @@ class CARPENTER_API ACSComputer : public ACSBaseInteractiableActor
 public:
 	ACSComputer();
 
-	UFUNCTION(BlueprintCallable, Category = "Spawn")
-	void RequestSpawnActor(const FVector& Location, const FRotator& Rotation, const FName& ItemName, UStaticMesh* StaticMesh);
+	UFUNCTION(BlueprintCallable, Category= "Spawn")
+	void spawnItem();
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, ReplicatedUsing=OnRep_ItemName, meta=(ExposeOnSpawn))
+	FName ItemName;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, ReplicatedUsing=OnRep_ItemMaterial, meta=(ExposeOnSpawn))
+	UMaterial* ItemMaterial;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, ReplicatedUsing=OnRep_ItemMesh, meta=(ExposeOnSpawn))
+	UStaticMesh* ChangedMesh;
 
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
@@ -32,19 +41,14 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Spawn")
 	TSubclassOf<ACSBaseItemActor> ItemClass;
 
-	UFUNCTION(NetMulticast, Reliable, WithValidation)
-	void ServerSpawnActor(const FVector& Location, const FRotator& Rotation, const FName& ItemName, UStaticMesh* StaticMesh);
-	void ServerSpawnActor_Implementation(const FVector& Location, const FRotator& Rotation, const FName& ItemName, UStaticMesh* StaticMesh);
-	bool ServerSpawnActor_Validate(const FVector& Location, const FRotator& Rotation, const FName& ItemName, UStaticMesh* StaticMesh);
-
-	void SpawnActor(const FVector& Location, const FRotator& Rotation, const FName& ItemName, UStaticMesh* StaticMesh);
+	UFUNCTION()
+	void OnRep_ItemName();
 
 	UFUNCTION()
-	void OnRep_SpawnedActor(ACSBaseItemActor* SpawnedActor);
+	void OnRep_ItemMaterial();
 
-	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
-
-private:
-	UPROPERTY(ReplicatedUsing = OnRep_SpawnedActor)
-	ACSBaseItemActor* SpawnedActor;
+	UFUNCTION()
+	void OnRep_ItemMesh();
+	
+	
 };

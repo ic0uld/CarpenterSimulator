@@ -9,7 +9,6 @@
 
 ACSComputer::ACSComputer()
 {
-    bReplicates = true;
     
     ScreenUI = CreateDefaultSubobject<UWidgetComponent>("ScreenUI");
     ScreenUI->SetupAttachment(RootComponent);
@@ -17,61 +16,47 @@ ACSComputer::ACSComputer()
     ActionComp = CreateDefaultSubobject<UCSAcitonComponent>("ActionComp");
 }
 
-void ACSComputer::RequestSpawnActor(const FVector& Location, const FRotator& Rotation, const FName& ItemName, UStaticMesh* StaticMesh)
+void ACSComputer::spawnItem()
 {
-    if (HasAuthority())
+    if (ensureAlways(ItemClass))
     {
-        SpawnActor(Location, Rotation, ItemName, StaticMesh);
-    }
-    else
-    {
-        ServerSpawnActor(Location, Rotation, ItemName, StaticMesh);
-    }
-}
+        FActorSpawnParameters SpawnParams;
+        SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
 
-void ACSComputer::ServerSpawnActor_Implementation(const FVector& Location, const FRotator& Rotation, const FName& ItemName, UStaticMesh* StaticMesh)
-{
-    SpawnActor(Location, Rotation, ItemName, StaticMesh);
-}
+        // Spawn the item on the server
+        ACSBaseItemActor* SpawnedItem = GetWorld()->SpawnActor<ACSBaseItemActor>(ItemClass, GetActorLocation(), GetActorRotation(), SpawnParams);
 
-bool ACSComputer::ServerSpawnActor_Validate(const FVector& Location, const FRotator& Rotation, const FName& ItemName, UStaticMesh* StaticMesh)
-{
-    return true;
-}
-
-void ACSComputer::SpawnActor(const FVector& Location, const FRotator& Rotation, const FName& ItemName, UStaticMesh* StaticMesh)
-{
-
-    FActorSpawnParameters SpawnParams;
-    SpawnParams.Owner = this;
-    SpawnParams.Instigator = GetInstigator();
-    SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
-
-    SpawnedActor = GetWorld()->SpawnActor<ACSBaseItemActor>(ItemClass, Location, Rotation, SpawnParams);
-
-    if (SpawnedActor)
-    {
-            SpawnedActor->SetReplicates(true);
-            SpawnedActor->BaseMesh->SetStaticMesh(StaticMesh);
-            SpawnedActor->ItemName = ItemName;
-
-            OnRep_SpawnedActor(SpawnedActor);
+        if (SpawnedItem)
+        {
+            SpawnedItem->SetReplicates(true);  // Ensure the item replicates to clients
+            SpawnedItem->BaseMesh->SetStaticMesh(ChangedMesh);  // Set the item's mesh
+            SpawnedItem->ItemName = ItemName;  // Set the item's name
+            
 
             GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Green, TEXT("Actor spawned and replicated successfully"));
+        }
     }
 }
 
-void ACSComputer::OnRep_SpawnedActor(ACSBaseItemActor* SpawnedActorX)
+
+void ACSComputer::OnRep_ItemName()
 {
-    if (SpawnedActorX)
-    {
-        GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Yellow, TEXT("Actor replicated to client"));
-    }
+}
+
+void ACSComputer::OnRep_ItemMaterial()
+{
+}
+
+void ACSComputer::OnRep_ItemMesh()
+{
 }
 
 void ACSComputer::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
     Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
-    DOREPLIFETIME(ACSComputer, SpawnedActor);
+    DOREPLIFETIME(ACSComputer, ItemName);
+    DOREPLIFETIME(ACSComputer, ItemMaterial);
+    DOREPLIFETIME(ACSComputer, ChangedMesh);
 }
+

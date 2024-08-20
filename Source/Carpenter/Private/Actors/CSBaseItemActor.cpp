@@ -9,7 +9,8 @@
 
 ACSBaseItemActor::ACSBaseItemActor()
 {
-
+	bReplicates = true;
+	
 }
 
 void ACSBaseItemActor::Interact_Implementation(APawn* InstigatorPawn)
@@ -71,10 +72,15 @@ void ACSBaseItemActor::OnRep_ItemMaterial()
 {
 }
 
+void ACSBaseItemActor::OnRep_ItemMesh()
+{
+}
+
 void ACSBaseItemActor::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
 	DOREPLIFETIME(ACSBaseItemActor, ItemName);
 	DOREPLIFETIME(ACSBaseItemActor, ItemMaterial);
+	DOREPLIFETIME(ACSBaseItemActor, ChangedMesh);
 }

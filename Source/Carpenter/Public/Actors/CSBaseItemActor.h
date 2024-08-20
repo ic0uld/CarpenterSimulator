@@ -26,6 +26,9 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, ReplicatedUsing=OnRep_ItemMaterial, meta=(ExposeOnSpawn))
 	UMaterial* ItemMaterial;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, ReplicatedUsing=OnRep_ItemMesh, meta=(ExposeOnSpawn))
+	UStaticMesh* ChangedMesh;
+
 protected:
 
 	virtual void OnDropped();
@@ -36,5 +39,8 @@ protected:
 
 	UFUNCTION()
 	void OnRep_ItemMaterial();
+
+	UFUNCTION()
+	void OnRep_ItemMesh();
 	
 };
