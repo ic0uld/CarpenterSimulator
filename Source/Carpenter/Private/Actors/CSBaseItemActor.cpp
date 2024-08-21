@@ -47,11 +47,11 @@ void ACSBaseItemActor::OnRep_OnEquipped()
         if (InteractionComp && !InteractionComp->EquippedItem)
         {
             BaseMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+            BaseMesh->SetCollisionProfileName("NoCollision");
 
             FAttachmentTransformRules AttachRules(EAttachmentRule::SnapToTarget, true);
             BaseMesh->AttachToComponent(PlayerCharacter->GetMesh(), AttachRules, TEXT("HandSocketName"));
-
-            // Additional logic to handle attaching to first-person mesh
+            
             if (USkeletalMeshComponent* SkeletalMesh = PlayerCharacter->Mesh1P)
             {
                 this->AttachToComponent(SkeletalMesh, AttachRules, TEXT("ItemSnapLocation"));
@@ -72,6 +72,7 @@ void ACSBaseItemActor::OnRep_OnDropped()
         BaseMesh->DetachFromComponent(FDetachmentTransformRules::KeepWorldTransform);
         BaseMesh->SetSimulatePhysics(true);
         BaseMesh->SetEnableGravity(true);
+        BaseMesh->SetCollisionProfileName("BlockAllDynamic");
         BaseMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
     }
 
