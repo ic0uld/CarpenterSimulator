@@ -70,6 +70,8 @@ void ACarpenterCharacter::SetupPlayerInputComponent(class UInputComponent* Playe
 	//Interact
 	PlayerInputComponent->BindAction("Interact", IE_Pressed, this, &ACarpenterCharacter::Interact);
 
+	//Drop Item
+	PlayerInputComponent->BindAction("DropItem", IE_Pressed, this, &ACarpenterCharacter::DropItem);
 
 
 	// Enable touchscreen input
@@ -165,6 +167,14 @@ void ACarpenterCharacter::Interact()
 	if (InteractionComponent)
 	{
 		InteractionComponent->PrimaryInteract();
+	}
+}
+
+void ACarpenterCharacter::DropItem()
+{
+	if (InteractionComponent)
+	{
+		InteractionComponent->DropItem();
 	}
 }
 

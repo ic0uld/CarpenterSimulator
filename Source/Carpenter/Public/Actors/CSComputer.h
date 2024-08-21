@@ -1,5 +1,3 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
 #pragma once
 
 #include "CoreMinimal.h"
@@ -11,42 +9,54 @@
 class UWidgetComponent;
 class ATargetPoint;
 
+UENUM(BlueprintType)
+enum class EItemType : uint8
+{
+	Chair UMETA(DisplayName = "Chair"),
+	Door UMETA(DisplayName = "Door"),
+	Cabinet UMETA(DisplayName = "Cabinet"),
+	Table UMETA(DisplayName = "Table")
+};
+
 UCLASS()
 class CARPENTER_API ACSComputer : public ACSBaseInteractiableActor
 {
 	GENERATED_BODY()
-	
+    
 public:
 	ACSComputer();
 
 	UFUNCTION(BlueprintCallable, NetMulticast, Reliable)
-	void ServerSetChangedMesh(UStaticMesh* NewMesh);
+	void ServerSetItemType(EItemType NewItemType);
 
-	UFUNCTION(BlueprintCallable, NetMulticast, Reliable)
-	void ServerSetItemName(const FName& NewItemName);
-	
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta=(ExposeOnSpawn))
-	FName ItemName;
-	
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta=(ExposeOnSpawn))
-	UMaterial* ItemMaterial;
+	UFUNCTION(BlueprintCallable, Category= "Spawn")
+	void OnItemTypeSelected(EItemType SelectedItemType);
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, ReplicatedUsing = OnRep_ChangedMesh)
-	UStaticMesh* ChangedMesh;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, ReplicatedUsing = OnRep_ItemType)
+	EItemType ItemType;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	ATargetPoint* TargetPoint;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Meshes")
+	UStaticMesh* ChairMesh;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Meshes")
+	UStaticMesh* DoorMesh;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Meshes")
+	UStaticMesh* CabinetMesh;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Meshes")
+	UStaticMesh* TableMesh;
 
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	UWidgetComponent* ScreenUI;
 
 	UFUNCTION()
-	void OnRep_ChangedMesh();
-
+	void OnRep_ItemType();
 
 	UPROPERTY(EditDefaultsOnly, Category = "Spawn")
 	TSubclassOf<ACSBaseItemActor> ItemClass;
-	
-	
 };

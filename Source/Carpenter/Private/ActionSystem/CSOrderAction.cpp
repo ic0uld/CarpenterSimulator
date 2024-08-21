@@ -49,13 +49,29 @@ void UCSOrderAction::SpawnItem(ACharacter* InstigatorCharacter)
 		{
 			FActorSpawnParameters SpawnParams;
 			SpawnParams.Instigator = InstigatorCharacter;
-		
+        
 			FTransform SpawnTM = Computer->TargetPoint->GetActorTransform();
 			ACSBaseItemActor* SpawnedItem = GetWorld()->SpawnActor<ACSBaseItemActor>(ItemClass, SpawnTM, SpawnParams);
 			if (SpawnedItem)
 			{
-				SpawnedItem->BaseMesh->SetStaticMesh(Computer->ChangedMesh);
-				//SpawnedItem->ItemName = Character->AttributeComponent->ItemName;
+				// Set the Static Mesh based on the ItemType
+				switch (Computer->ItemType)
+				{
+				case EItemType::Chair:
+					SpawnedItem->BaseMesh->SetStaticMesh(Computer->ChairMesh);
+					break;
+				case EItemType::Door:
+					SpawnedItem->BaseMesh->SetStaticMesh(Computer->DoorMesh);
+					break;
+				case EItemType::Cabinet:
+					SpawnedItem->BaseMesh->SetStaticMesh(Computer->CabinetMesh);
+					break;
+				case EItemType::Table:
+					SpawnedItem->BaseMesh->SetStaticMesh(Computer->TableMesh);
+					break;
+				default:
+					break;
+				}
 
 				GEngine->AddOnScreenDebugMessage(-1, 1.0f, FColor::Green, TEXT("Spawned"));
 			}

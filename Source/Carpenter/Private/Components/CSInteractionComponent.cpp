@@ -33,6 +33,11 @@ void UCSInteractionComponent::PrimaryInteract()
 	
 }
 
+void UCSInteractionComponent::DropItem()
+{
+	ServerDropItem(EquippedItem);
+}
+
 void UCSInteractionComponent::ServerInteract_Implementation(AActor* InFocus)
 {
 	if (InFocus == nullptr)
@@ -45,9 +50,17 @@ void UCSInteractionComponent::ServerInteract_Implementation(AActor* InFocus)
 	ICSGameplayInterface::Execute_Interact(InFocus, MyPawn);
 }
 
-void UCSInteractionComponent::EquipItem()
+
+void UCSInteractionComponent::ServerDropItem_Implementation(AActor* InFocus)
 {
-	
+	if (!EquippedItem)
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 1.0f, FColor::Red, "No Item");
+		return;
+	}
+
+	APawn* MyPawn = Cast<APawn>(GetOwner());
+	ICSGameplayInterface::Execute_DropItem(EquippedItem, MyPawn);
 }
 
 void UCSInteractionComponent::FindCloseActor()

@@ -57,6 +57,9 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void Interact();
 
+	UFUNCTION(BlueprintCallable)
+	void DropItem();
+
 
 
 protected:

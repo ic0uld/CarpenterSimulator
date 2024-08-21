@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Actors/CSBaseItemActor.h"
 #include "Components/ActorComponent.h"
 #include "CSInteractionComponent.generated.h"
 
@@ -17,14 +18,14 @@ public:
 
 	void PrimaryInteract();
 
-	UFUNCTION()
-	void EquipItem();
+	void DropItem();
+	
 
-	UPROPERTY()
+	UPROPERTY(BlueprintReadOnly)
 	AActor* OnFocuActor;
 
 	UPROPERTY()
-	AActor* EquippedItem;
+	ACSBaseItemActor* EquippedItem;
 
 	
 
@@ -32,6 +33,9 @@ protected:
 
 	UFUNCTION(Server, Reliable)
 	void ServerInteract(AActor* InFocus);
+	
+	UFUNCTION(Server, Reliable)
+	void ServerDropItem(AActor* InFocus);
 
 	void FindCloseActor();
 

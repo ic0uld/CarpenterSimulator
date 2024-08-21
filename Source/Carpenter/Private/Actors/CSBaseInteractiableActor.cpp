@@ -25,3 +25,8 @@ void ACSBaseInteractiableActor::Interact_Implementation(APawn* InstigatorPawn)
 	
 }
 
+void ACSBaseInteractiableActor::DropItem_Implementation(APawn* InstigatorPawn)
+{
+	ICSGameplayInterface::DropItem_Implementation(InstigatorPawn);
+}
+

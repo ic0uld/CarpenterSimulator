@@ -6,36 +6,46 @@
 ACSBaseItemActor::ACSBaseItemActor()
 {
     bReplicates = true;
+    bOnEquipped = false;
+    bOnDropped = false;
+
+    PlayerCharacter = nullptr;
 }
 
 void ACSBaseItemActor::Interact_Implementation(APawn* InstigatorPawn)
 {
-    if (HasAuthority())
-    {
-        OnEquipped(InstigatorPawn);  // Server handles the equipping logic
-    }
-    else
-    {
-        ServerInteract(InstigatorPawn);  // Clients request the server to equip the item
-    }
+    PlayerCharacter = Cast<ACarpenterCharacter>(InstigatorPawn);
+  
+   
+        bOnEquipped = !bOnEquipped;
+        OnRep_OnEquipped();
+    
 }
 
-void ACSBaseItemActor::ServerInteract_Implementation(APawn* InstigatorPawn)
+void ACSBaseItemActor::DropItem_Implementation(APawn* InstigatorPawn)
 {
-    OnEquipped(InstigatorPawn);  // Perform server-side logic for equipping the item
+
+    PlayerCharacter = Cast<ACarpenterCharacter>(InstigatorPawn);
+    
+    bOnDropped = !bOnDropped;
+    OnRep_OnDropped();
 }
 
-void ACSBaseItemActor::OnEquipped(APawn* InstigatorPawn)
+void ACSBaseItemActor::OnActorLoaded_Implementation()
 {
-    ACarpenterCharacter* PlayerCharacter = Cast<ACarpenterCharacter>(InstigatorPawn);
+    OnRep_OnEquipped();
+    OnRep_OnDropped();
+}
+
+
+void ACSBaseItemActor::OnRep_OnEquipped()
+{
     if (PlayerCharacter)
     {
         UCSInteractionComponent* InteractionComp = PlayerCharacter->FindComponentByClass<UCSInteractionComponent>();
 
         if (InteractionComp && !InteractionComp->EquippedItem)
         {
-            BaseMesh->SetSimulatePhysics(false);
-            BaseMesh->SetEnableGravity(false);
             BaseMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
             FAttachmentTransformRules AttachRules(EAttachmentRule::SnapToTarget, true);
@@ -45,30 +55,34 @@ void ACSBaseItemActor::OnEquipped(APawn* InstigatorPawn)
             if (USkeletalMeshComponent* SkeletalMesh = PlayerCharacter->Mesh1P)
             {
                 this->AttachToComponent(SkeletalMesh, AttachRules, TEXT("ItemSnapLocation"));
+                InteractionComp->EquippedItem = this;
+                bOnEquipped = !bOnEquipped;
             }
         }
     }
 }
 
-void ACSBaseItemActor::OnDropped()
+void ACSBaseItemActor::OnRep_OnDropped()
 {
-    BaseMesh->DetachFromComponent(FDetachmentTransformRules::KeepWorldTransform);
-    BaseMesh->SetSimulatePhysics(true);
-    BaseMesh->SetEnableGravity(true);
-    BaseMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+    UCSInteractionComponent* InteractionComp = PlayerCharacter->FindComponentByClass<UCSInteractionComponent>();
+    if (InteractionComp)
+    {
+        bOnDropped = false;
+        InteractionComp->EquippedItem = nullptr;
+        BaseMesh->DetachFromComponent(FDetachmentTransformRules::KeepWorldTransform);
+        BaseMesh->SetSimulatePhysics(true);
+        BaseMesh->SetEnableGravity(true);
+        BaseMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+    }
+
+    
 }
-
-void ACSBaseItemActor::OnRep_ItemName() { }
-
-void ACSBaseItemActor::OnRep_ItemMaterial() { }
-
-void ACSBaseItemActor::OnRep_ItemMesh() { }
 
 void ACSBaseItemActor::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
     Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
-    DOREPLIFETIME(ACSBaseItemActor, ItemName);
-    DOREPLIFETIME(ACSBaseItemActor, ItemMaterial);
-    DOREPLIFETIME(ACSBaseItemActor, ChangedMesh);
+    DOREPLIFETIME(ACSBaseItemActor, bOnEquipped);
+    DOREPLIFETIME(ACSBaseItemActor, bOnDropped);
 }
+

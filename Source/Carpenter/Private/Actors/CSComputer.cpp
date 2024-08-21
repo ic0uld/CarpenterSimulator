@@ -9,29 +9,33 @@
 
 ACSComputer::ACSComputer()
 {
-    
+     
     ScreenUI = CreateDefaultSubobject<UWidgetComponent>("ScreenUI");
     ScreenUI->SetupAttachment(RootComponent);
 
 }
 
-void ACSComputer::ServerSetItemName_Implementation(const FName& NewItemName)
+void ACSComputer::OnItemTypeSelected(EItemType SelectedItemType)
 {
+        if (this->HasAuthority())
+        {
+          
+            ServerSetItemType(SelectedItemType);
+        }
+        else
+        {
+         
+            ServerSetItemType(SelectedItemType);
+        }
 }
 
-void ACSComputer::OnRep_ChangedMesh()
+void ACSComputer::ServerSetItemType_Implementation(EItemType NewItemType)
 {
-  
+    ItemType = NewItemType;
 }
 
-
-void ACSComputer::ServerSetChangedMesh_Implementation(UStaticMesh* NewMesh)
+void ACSComputer::OnRep_ItemType()
 {
-    if (ChangedMesh != NewMesh)
-    {
-        ChangedMesh = NewMesh;
-        OnRep_ChangedMesh();
-    }
 }
 
 
@@ -39,6 +43,6 @@ void ACSComputer::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifet
 {
     Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
-    DOREPLIFETIME(ACSComputer, ChangedMesh);
+    DOREPLIFETIME(ACSComputer, ItemType);
 }
 

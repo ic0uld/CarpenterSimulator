@@ -6,9 +6,8 @@
 #include "Actors/CSBaseInteractiableActor.h"
 #include "CSBaseItemActor.generated.h"
 
-/**
- * 
- */
+class ACarpenterCharacter;
+
 UCLASS()
 class CARPENTER_API ACSBaseItemActor : public ACSBaseInteractiableActor
 {
@@ -18,35 +17,38 @@ class CARPENTER_API ACSBaseItemActor : public ACSBaseInteractiableActor
 public:
 	ACSBaseItemActor();
 
-	virtual void Interact_Implementation(APawn* InstigatorPawn) override;
+	void Interact_Implementation(APawn* InstigatorPawn);
 
-	UFUNCTION(BlueprintCallable, Server, Reliable)
-	void ServerInteract(APawn* InstigatorPawn);
+	void DropItem_Implementation(APawn* InstigatorPawn);
 
-	UPROPERTY(ReplicatedUsing = OnRep_ItemName)
+	void OnActorLoaded_Implementation();
+
+	
+	
+	UPROPERTY(BlueprintReadOnly)
 	FName ItemName;
 
-	UPROPERTY(ReplicatedUsing = OnRep_ItemMaterial)
+	UPROPERTY(BlueprintReadOnly)
 	UMaterial* ItemMaterial;
 
-	UPROPERTY(ReplicatedUsing = OnRep_ItemMesh)
+	UPROPERTY(BlueprintReadOnly)
 	UStaticMesh* ChangedMesh;
 
 protected:
 
-
-
-	void OnEquipped(APawn* InstigatorPawn);
-	void OnDropped();
+	UPROPERTY(ReplicatedUsing="OnRep_OnEquipped", BlueprintReadOnly) 
+	bool bOnEquipped;
 
 	UFUNCTION()
-	void OnRep_ItemName();
+	void OnRep_OnEquipped();
+
+	UPROPERTY(ReplicatedUsing="OnRep_OnDropped", BlueprintReadOnly)
+	bool bOnDropped;
 
 	UFUNCTION()
-	void OnRep_ItemMaterial();
+	void OnRep_OnDropped();
 
-	UFUNCTION()
-	void OnRep_ItemMesh();
+	ACarpenterCharacter* PlayerCharacter;
+	
 
-	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 };

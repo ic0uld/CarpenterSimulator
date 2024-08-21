@@ -18,6 +18,8 @@ public:
 	ACSBaseInteractiableActor();
 	
 	virtual void Interact_Implementation(APawn* InstigatorPawn) override;
+
+	virtual void DropItem_Implementation(APawn* InstigatorPawn) override;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta=(ExposeOnSpawn))
 	UStaticMeshComponent* BaseMesh;
