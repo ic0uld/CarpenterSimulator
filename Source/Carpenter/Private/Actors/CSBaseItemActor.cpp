@@ -1,86 +1,74 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
-
 #include "Actors/CSBaseItemActor.h"
-
 #include "Carpenter/CarpenterCharacter.h"
 #include "Components/CSInteractionComponent.h"
 #include "Net/UnrealNetwork.h"
 
 ACSBaseItemActor::ACSBaseItemActor()
 {
-	bReplicates = true;
-	
+    bReplicates = true;
 }
 
 void ACSBaseItemActor::Interact_Implementation(APawn* InstigatorPawn)
 {
-	Super::Interact_Implementation(InstigatorPawn);
-
-	if (ensure(InstigatorPawn))
-	{
-		GEngine->AddOnScreenDebugMessage(-1, 1.0f, FColor::Green, TEXT("InteracrItem"));
-
-		OnEquipped(InstigatorPawn);
-	}
+    if (HasAuthority())
+    {
+        OnEquipped(InstigatorPawn);  // Server handles the equipping logic
+    }
+    else
+    {
+        ServerInteract(InstigatorPawn);  // Clients request the server to equip the item
+    }
 }
 
-void ACSBaseItemActor::OnDropped()
+void ACSBaseItemActor::ServerInteract_Implementation(APawn* InstigatorPawn)
 {
-	
-	
-	BaseMesh->SetSimulatePhysics(true);
-	BaseMesh->SetEnableGravity(true);
-	BaseMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
-	BaseMesh->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Block);
-	BaseMesh->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Ignore);
-	BaseMesh->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Ignore);
-	BaseMesh->MarkRenderStateDirty();
-	
+    OnEquipped(InstigatorPawn);  // Perform server-side logic for equipping the item
 }
 
 void ACSBaseItemActor::OnEquipped(APawn* InstigatorPawn)
 {
+    ACarpenterCharacter* PlayerCharacter = Cast<ACarpenterCharacter>(InstigatorPawn);
+    if (PlayerCharacter)
+    {
+        UCSInteractionComponent* InteractionComp = PlayerCharacter->FindComponentByClass<UCSInteractionComponent>();
 
-	GEngine->AddOnScreenDebugMessage(-1, 1.0f, FColor::Green, TEXT("OnEquipped"));
+        if (InteractionComp && !InteractionComp->EquippedItem)
+        {
+            BaseMesh->SetSimulatePhysics(false);
+            BaseMesh->SetEnableGravity(false);
+            BaseMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
-	ACarpenterCharacter* PlayerCharacter = CastChecked<ACarpenterCharacter>(InstigatorPawn);
+            FAttachmentTransformRules AttachRules(EAttachmentRule::SnapToTarget, true);
+            BaseMesh->AttachToComponent(PlayerCharacter->GetMesh(), AttachRules, TEXT("HandSocketName"));
 
-	UCSInteractionComponent* InteractionComp = PlayerCharacter->FindComponentByClass<UCSInteractionComponent>();
-
-	if (PlayerCharacter && InteractionComp)
-	{
-		if (!InteractionComp->EquippedItem)
-		{
-			InteractionComp->ServerEquippedItem();
-			
-			BaseMesh->SetSimulatePhysics(false);
-			BaseMesh->SetEnableGravity(false);
-			BaseMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-		}
-	}
-	
-	
-
+            // Additional logic to handle attaching to first-person mesh
+            if (USkeletalMeshComponent* SkeletalMesh = PlayerCharacter->Mesh1P)
+            {
+                this->AttachToComponent(SkeletalMesh, AttachRules, TEXT("ItemSnapLocation"));
+            }
+        }
+    }
 }
 
-void ACSBaseItemActor::OnRep_ItemName()
+void ACSBaseItemActor::OnDropped()
 {
+    BaseMesh->DetachFromComponent(FDetachmentTransformRules::KeepWorldTransform);
+    BaseMesh->SetSimulatePhysics(true);
+    BaseMesh->SetEnableGravity(true);
+    BaseMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 }
 
-void ACSBaseItemActor::OnRep_ItemMaterial()
-{
-}
+void ACSBaseItemActor::OnRep_ItemName() { }
 
-void ACSBaseItemActor::OnRep_ItemMesh()
-{
-}
+void ACSBaseItemActor::OnRep_ItemMaterial() { }
+
+void ACSBaseItemActor::OnRep_ItemMesh() { }
 
 void ACSBaseItemActor::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
-	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+    Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
-	DOREPLIFETIME(ACSBaseItemActor, ItemName);
-	DOREPLIFETIME(ACSBaseItemActor, ItemMaterial);
-	DOREPLIFETIME(ACSBaseItemActor, ChangedMesh);
+    DOREPLIFETIME(ACSBaseItemActor, ItemName);
+    DOREPLIFETIME(ACSBaseItemActor, ItemMaterial);
+    DOREPLIFETIME(ACSBaseItemActor, ChangedMesh);
 }

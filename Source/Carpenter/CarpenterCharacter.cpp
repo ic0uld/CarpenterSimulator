@@ -11,6 +11,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "MotionControllerComponent.h"
 #include "XRMotionControllerBase.h" // for FXRMotionControllerBase::RightHandSourceId
+#include "Components/CSAttributeComponent.h"
 #include "Components/CSInteractionComponent.h"
 
 DEFINE_LOG_CATEGORY_STATIC(LogFPChar, Warning, All);
@@ -41,10 +42,14 @@ ACarpenterCharacter::ACarpenterCharacter()
 	Mesh1P->CastShadow = false;
 	Mesh1P->SetRelativeRotation(FRotator(1.9f, -19.19f, 5.2f));
 	Mesh1P->SetRelativeLocation(FVector(-0.5f, -4.4f, -155.7f));
-	
+
+	// Create an Action Management Comp
 	ActionComp = CreateDefaultSubobject<UCSAcitonComponent>("ActionComp");
 
-	// Create a InteractıonComponent
+	//Create an Attribute Comp
+	AttributeComponent = CreateDefaultSubobject<UCSAttributeComponent>("AttributeComponent");
+
+	// Create an InteractıonComponent
 	InteractionComponent= CreateDefaultSubobject<UCSInteractionComponent>("InteractionComponent");
 
 

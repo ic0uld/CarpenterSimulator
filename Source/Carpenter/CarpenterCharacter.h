@@ -12,6 +12,7 @@ class USkeletalMeshComponent;
 class USceneComponent;
 class UCameraComponent;
 class UCSInteractionComponent;
+class UCSAttributeComponent;
 class UMotionControllerComponent;
 class UAnimMontage;
 class USoundBase;
@@ -34,6 +35,8 @@ class ACarpenterCharacter : public ACharacter
 
 
 
+
+
 public:
 	ACarpenterCharacter();
 
@@ -41,6 +44,9 @@ public:
 
 	UPROPERTY(VisibleDefaultsOnly, Category=Mesh)
 	USkeletalMeshComponent* Mesh1P;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components" )
+	UCSAttributeComponent* AttributeComponent;
 	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category=Camera)
 	float BaseTurnRate;

@@ -12,27 +12,32 @@
 UCLASS()
 class CARPENTER_API ACSBaseItemActor : public ACSBaseInteractiableActor
 {
+
 	GENERATED_BODY()
 
 public:
-
 	ACSBaseItemActor();
 
-	void Interact_Implementation(APawn* InstigatorPawn)override;
-	
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, ReplicatedUsing=OnRep_ItemName, meta=(ExposeOnSpawn))
+	virtual void Interact_Implementation(APawn* InstigatorPawn) override;
+
+	UFUNCTION(BlueprintCallable, Server, Reliable)
+	void ServerInteract(APawn* InstigatorPawn);
+
+	UPROPERTY(ReplicatedUsing = OnRep_ItemName)
 	FName ItemName;
-	
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, ReplicatedUsing=OnRep_ItemMaterial, meta=(ExposeOnSpawn))
+
+	UPROPERTY(ReplicatedUsing = OnRep_ItemMaterial)
 	UMaterial* ItemMaterial;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, ReplicatedUsing=OnRep_ItemMesh, meta=(ExposeOnSpawn))
+	UPROPERTY(ReplicatedUsing = OnRep_ItemMesh)
 	UStaticMesh* ChangedMesh;
 
 protected:
 
-	virtual void OnDropped();
-	virtual void OnEquipped(APawn* InstigatorPawn);
+
+
+	void OnEquipped(APawn* InstigatorPawn);
+	void OnDropped();
 
 	UFUNCTION()
 	void OnRep_ItemName();
@@ -42,5 +47,6 @@ protected:
 
 	UFUNCTION()
 	void OnRep_ItemMesh();
-	
+
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 };

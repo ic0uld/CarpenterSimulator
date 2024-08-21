@@ -45,21 +45,9 @@ void UCSInteractionComponent::ServerInteract_Implementation(AActor* InFocus)
 	ICSGameplayInterface::Execute_Interact(InFocus, MyPawn);
 }
 
-void UCSInteractionComponent::ServerEquippedItem_Implementation()
+void UCSInteractionComponent::EquipItem()
 {
-	APawn* MyPawn = Cast<APawn>(GetOwner());
-	ACarpenterCharacter* PlayerCharacter = Cast<ACarpenterCharacter>(MyPawn);
 	
-	if (PlayerCharacter)
-	{
-		if (USkeletalMeshComponent* SkeletalMesh = PlayerCharacter ? PlayerCharacter->Mesh1P : nullptr)
-		{
-			FAttachmentTransformRules AttachmentRules(EAttachmentRule::SnapToTarget, EAttachmentRule::SnapToTarget, EAttachmentRule::KeepRelative, true);
-			OnFocuActor->AttachToComponent(PlayerCharacter->GetMesh1P(), AttachmentRules, PlayerCharacter->GetMesh1P()->GetSocketBoneName("ItemSnapLocation"));;
-			OnFocuActor = EquippedItem;
-		
-		}
-	}
 }
 
 void UCSInteractionComponent::FindCloseActor()

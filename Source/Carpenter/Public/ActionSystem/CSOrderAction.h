@@ -20,36 +20,17 @@ public:
 	
 protected:
 
-	/* Sphere radius of the sweep to find desired target under crosshair. Adjusts final projectile direction */
-	UPROPERTY(EditAnywhere, Category="Targeting")
-	float SweepRadius;
-
-	/* Fallback distance when sweep finds no collision under crosshair. Adjusts final projectile direction */
-	UPROPERTY(EditAnywhere, Category="Targeting")
-	float SweepDistanceFallback;
-
-	UPROPERTY(EditAnywhere, Category = "Attack")
-	TSubclassOf<AActor> ProjectileClass;
-
-	UPROPERTY(VisibleAnywhere, Category = "Effects")
-	FName HandSocketName;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Attack")
-	float AttackAnimDelay;
-
-	UPROPERTY(EditAnywhere, Category = "Attack")
-	UAnimMontage* AttackAnim;
-
-	/* Particle System played during attack animation */
-	UPROPERTY(EditAnywhere, Category = "Attack")
+	UPROPERTY(EditAnywhere, Category = "Spawn")
+	TSubclassOf<ACSBaseItemActor> ItemClass;
+	
+	UPROPERTY(EditAnywhere, Category = "Spawn")
 	UParticleSystem* CastingEffect;
-
-	/* Sound Effect to play (Can be Wave or Cue) */
-	UPROPERTY(EditAnywhere, Category = "Attack")
+	
+	UPROPERTY(EditAnywhere, Category = "Spawn")
 	USoundBase* CastingSound;
 
 	UFUNCTION()
-	void AttackDelay_Elapsed(ACharacter* InstigatorCharacter);
+	void SpawnItem(ACharacter* InstigatorCharacter);
 
 public:
 

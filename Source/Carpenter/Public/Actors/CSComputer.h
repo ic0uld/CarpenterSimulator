@@ -15,40 +15,38 @@ UCLASS()
 class CARPENTER_API ACSComputer : public ACSBaseInteractiableActor
 {
 	GENERATED_BODY()
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components" , meta = (AllowPrivateAccess = "true"))
-	UCSAcitonComponent* ActionComp;
 	
 public:
 	ACSComputer();
 
-	UFUNCTION(BlueprintCallable, Category= "Spawn")
-	void spawnItem();
+	UFUNCTION(BlueprintCallable, NetMulticast, Reliable)
+	void ServerSetChangedMesh(UStaticMesh* NewMesh);
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, ReplicatedUsing=OnRep_ItemName, meta=(ExposeOnSpawn))
+	UFUNCTION(BlueprintCallable, NetMulticast, Reliable)
+	void ServerSetItemName(const FName& NewItemName);
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta=(ExposeOnSpawn))
 	FName ItemName;
 	
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, ReplicatedUsing=OnRep_ItemMaterial, meta=(ExposeOnSpawn))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta=(ExposeOnSpawn))
 	UMaterial* ItemMaterial;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, ReplicatedUsing=OnRep_ItemMesh, meta=(ExposeOnSpawn))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, ReplicatedUsing = OnRep_ChangedMesh)
 	UStaticMesh* ChangedMesh;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	ATargetPoint* TargetPoint;
 
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	UWidgetComponent* ScreenUI;
 
+	UFUNCTION()
+	void OnRep_ChangedMesh();
+
+
 	UPROPERTY(EditDefaultsOnly, Category = "Spawn")
 	TSubclassOf<ACSBaseItemActor> ItemClass;
-
-	UFUNCTION()
-	void OnRep_ItemName();
-
-	UFUNCTION()
-	void OnRep_ItemMaterial();
-
-	UFUNCTION()
-	void OnRep_ItemMesh();
 	
 	
 };

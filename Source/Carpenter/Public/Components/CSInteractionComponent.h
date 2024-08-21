@@ -17,8 +17,8 @@ public:
 
 	void PrimaryInteract();
 
-	UFUNCTION(Server, Reliable)
-	void ServerEquippedItem();
+	UFUNCTION()
+	void EquipItem();
 
 	UPROPERTY()
 	AActor* OnFocuActor;
