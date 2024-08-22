@@ -6,27 +6,22 @@
 // Sets default values
 ACSBaseInteractiableActor::ACSBaseInteractiableActor()
 {
- 	
-	PrimaryActorTick.bCanEverTick = true;
-
-	BaseMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("BaseMesh"));
-	RootComponent = BaseMesh;
+	MeshComp = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Mesh"));
+	RootComponent = MeshComp;
 
 }
 
-void ACSBaseInteractiableActor::Interact_Implementation(APawn* InstigatorPawn)
+void ACSBaseInteractiableActor::OnBeginFocus()
 {
-	ICSGameplayInterface::Interact_Implementation(InstigatorPawn);
-
-	if (GEngine)
-	{
-		GEngine->AddOnScreenDebugMessage(-1, 3.0f, FColor::Green, TEXT("Interacted"), false);
-	}
-	
+	MeshComp->SetRenderCustomDepth(true);
 }
 
-void ACSBaseInteractiableActor::DropItem_Implementation(APawn* InstigatorPawn)
+void ACSBaseInteractiableActor::OnEndFocus()
 {
-	ICSGameplayInterface::DropItem_Implementation(InstigatorPawn);
+	MeshComp->SetRenderCustomDepth(false);
 }
 
+void ACSBaseInteractiableActor::OnUsed(APawn* InstigatorPawn)
+{
+	//
+}

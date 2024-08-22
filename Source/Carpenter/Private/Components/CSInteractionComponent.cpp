@@ -2,150 +2,288 @@
 
 
 #include "Components/CSInteractionComponent.h"
+#include "Components/SceneComponent.h"
 
-#include "DrawDebugHelpers.h"
-#include "Carpenter/CarpenterCharacter.h"
-#include "Interfaces/CSGameplayInterface.h"
-#include "UI/SWorldUserWidget.h"
-
-
-// Sets default values for this component's properties
 UCSInteractionComponent::UCSInteractionComponent()
 {
-	// Set this component to be initialized when the game starts, and to be ticked every frame.  You can turn these features
-	// off to improve performance if you don't need them.
-	PrimaryComponentTick.bCanEverTick = true;
-	
-	PrimaryComponentTick.TickGroup = TG_PostUpdateWork;
+	MaxPickupDistance = 600;
+	RotateSpeed = 10.0f;
 
-	TraceRadius = 30.0f;
-	TraceDistance = 500.0f;
-	CollisionChannel = ECC_WorldDynamic;
-
-	EquippedItem = nullptr;
-	
+	SetIsReplicatedByDefault(true);
 }
 
-void UCSInteractionComponent::PrimaryInteract()
+AActor* UCSInteractionComponent::GetActorInView()
 {
-
-	ServerInteract(OnFocuActor);
-	
-}
-
-void UCSInteractionComponent::DropItem()
-{
-	ServerDropItem(EquippedItem);
-}
-
-void UCSInteractionComponent::ServerInteract_Implementation(AActor* InFocus)
-{
-	if (InFocus == nullptr)
+	APawn* PawnOwner = Cast<APawn>(GetOwner());
+	AController* Controller = PawnOwner->Controller;
+	if (Controller == nullptr)
 	{
-		GEngine->AddOnScreenDebugMessage(-1, 1.0f, FColor::Red, "No Actor");
+		return nullptr;
+	}
+
+	FVector CamLoc;
+	FRotator CamRot;
+	Controller->GetPlayerViewPoint(CamLoc, CamRot);
+
+	const FVector TraceStart = CamLoc;
+	const FVector Direction = CamRot.Vector();
+	const FVector TraceEnd = TraceStart + (Direction * MaxPickupDistance);
+
+	FCollisionQueryParams TraceParams(TEXT("TraceActor"), true, PawnOwner);
+	TraceParams.bReturnPhysicalMaterial = false;
+	TraceParams.bTraceComplex = false;
+
+	FHitResult Hit(ForceInit);
+	GetWorld()->LineTraceSingleByChannel(Hit, TraceStart, TraceEnd, ECC_Visibility, TraceParams);
+
+	/* Check to see if we hit a staticmesh component that has physics simulation enabled */
+	UStaticMeshComponent* MeshComp = Cast<UStaticMeshComponent>(Hit.GetComponent());
+	if (MeshComp && MeshComp->IsSimulatingPhysics())
+	{
+		return Hit.GetActor();
+	}
+
+	return nullptr;
+}
+
+void UCSInteractionComponent::OnDropMulticast_Implementation()
+{
+	AActor* CarriedActor = GetCarriedActor();
+	if (CarriedActor)
+	{
+		/* Find the static mesh (if any) to re-enable physics simulation */
+		UStaticMeshComponent* MeshComp = Cast<UStaticMeshComponent>(CarriedActor->GetComponentByClass(UStaticMeshComponent::StaticClass()));
+		if (MeshComp)
+		{
+			MeshComp->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+			MeshComp->SetSimulatePhysics(true);
+		}
+
+		CarriedActor->GetRootComponent()->DetachFromComponent(FDetachmentTransformRules::KeepWorldTransform);
+	}
+}
+
+void UCSInteractionComponent::Throw()
+{
+	if (!GetIsCarryingActor())
+		return;
+
+	if (!GetOwner()->HasAuthority())
+	{
+		ServerThrow();
 		return;
 	}
 
-	APawn* MyPawn = Cast<APawn>(GetOwner());
-	ICSGameplayInterface::Execute_Interact(InFocus, MyPawn);
+	/* Grab a reference to the MeshComp before dropping the object */
+	UStaticMeshComponent* MeshComp = GetCarriedMeshComp();
+	if (MeshComp)
+	{
+		/* Detach and re-enable collision */
+		OnDropMulticast();
+
+		APawn* OwningPawn = Cast<APawn>(GetOwner());
+		if (OwningPawn)
+		{
+			/* Re-map uint8 to 360 degrees */
+			const float PawnViewPitch = (OwningPawn->RemoteViewPitch / 255.f)*360.f;
+
+			FRotator NewRotation = GetComponentRotation();
+			NewRotation.Pitch = PawnViewPitch;
+
+			/* Apply physics impulse, ignores mass */
+			MeshComp->AddImpulse(NewRotation.Vector() * 1000, NAME_None, true);
+		}
+	}
 }
 
-
-void UCSInteractionComponent::ServerDropItem_Implementation(AActor* InFocus)
+bool UCSInteractionComponent::GetIsCarryingActor()
 {
-	if (!EquippedItem)
-	{
-		GEngine->AddOnScreenDebugMessage(-1, 1.0f, FColor::Red, "No Item");
-		return;
-	}
-
-	APawn* MyPawn = Cast<APawn>(GetOwner());
-	ICSGameplayInterface::Execute_DropItem(EquippedItem, MyPawn);
+	return GetChildComponent(0) != nullptr;
 }
 
-void UCSInteractionComponent::FindCloseActor()
+void UCSInteractionComponent::Rotate(float DirectionYaw, float DirectionRoll)
 {
-
-	FCollisionObjectQueryParams ObjectQueryParams;
-	ObjectQueryParams.AddObjectTypesToQuery(CollisionChannel);
-
-	AActor* MyOwner = GetOwner();
-
-	FVector EyeLocation;
-	FRotator EyeRotation;
-	MyOwner->GetActorEyesViewPoint(EyeLocation, EyeRotation);
-
-	FVector End = EyeLocation + (EyeRotation.Vector() * TraceDistance);
-
-	TArray<FHitResult> Hits;
-
-	FCollisionShape Shape;
-	Shape.SetSphere(TraceRadius);
-
-	bool bBlockingHit = GetWorld()->SweepMultiByObjectType(Hits, EyeLocation, End, FQuat::Identity, ObjectQueryParams, Shape);
-
-	FColor LineColor = bBlockingHit ? FColor::Yellow : FColor::Red;
-
-	//// Clear ref before trying to fill////
-	OnFocuActor = nullptr;
-
-	for (FHitResult Hit : Hits)
+	if (!GetOwner()->HasAuthority())
 	{
-		
-		DrawDebugSphere(GetWorld(), Hit.ImpactPoint, TraceRadius, 32, LineColor, false, 0.0f);
-		
-
-		AActor* HitActor = Hit.GetActor();
-		if (HitActor)
-		{
-			if (HitActor->Implements<UCSGameplayInterface>())
-			{
-				OnFocuActor = HitActor;
-				break;
-			}
-		}
+		ServerRotate(DirectionYaw, DirectionRoll);
 	}
 
-	if (OnFocuActor)
-	{
-		if (DefaultWidgetInstance == nullptr && ensure(DefaultWidgetClass))
-		{
-			DefaultWidgetInstance = CreateWidget<USWorldUserWidget>(GetWorld(), DefaultWidgetClass);
-		}
-
-		if (DefaultWidgetInstance)
-		{
-			DefaultWidgetInstance->AttachedActor = OnFocuActor;
-
-			if (!DefaultWidgetInstance->IsInViewport())
-			{
-				DefaultWidgetInstance->AddToViewport();
-			}
-		}
-	}
-	else
-	{
-		if (DefaultWidgetInstance)
-		{
-			DefaultWidgetInstance->RemoveFromParent();
-		}
-	}
-
-
-	
-	DrawDebugLine(GetWorld(), EyeLocation, End, LineColor, false, 2.0f, 0, 0.0f);
-	
+	OnRotateMulticast(DirectionYaw, DirectionRoll);
 }
 
-void UCSInteractionComponent::TickComponent(float DeltaTime, ELevelTick TickType,
+AActor* UCSInteractionComponent::GetCarriedActor()
+{
+	USceneComponent* ChildComp = GetChildComponent(0);
+	if (ChildComp)
+	{
+		return ChildComp->GetOwner();
+	}
+
+	return nullptr;
+}
+
+UStaticMeshComponent* UCSInteractionComponent::GetCarriedMeshComp()
+{
+	USceneComponent* ChildComp = GetChildComponent(0);
+	if (ChildComp)
+	{
+		AActor* OwningActor = ChildComp->GetOwner();
+		if (OwningActor)
+		{
+			return Cast<UStaticMeshComponent>(OwningActor->GetComponentByClass(UStaticMeshComponent::StaticClass()));
+		}
+	}
+
+	return nullptr;
+}
+
+void UCSInteractionComponent::TickComponent(float DeltaSeconds, ELevelTick TickType,
 	FActorComponentTickFunction* ThisTickFunction)
 {
-	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
-
-	
-	APawn* MyPawn = Cast<APawn>(GetOwner());
-	if (MyPawn->IsLocallyControlled())
+	if (APawn* OwningPawn = Cast<APawn>(GetOwner()))
 	{
-		FindCloseActor();
+		if (OwningPawn->IsLocallyControlled())
+		{
+			Super::TickComponent(DeltaSeconds, TickType, ThisTickFunction);
+		}
+		else
+		{
+			if (bUsePawnControlRotation)
+			{
+				{
+					const float PawnViewPitch = (OwningPawn->RemoteViewPitch / 255.f)*360.f;
+					if (PawnViewPitch != GetComponentRotation().Pitch)
+					{
+						FRotator NewRotation = GetComponentRotation();
+						NewRotation.Pitch = PawnViewPitch;
+						SetWorldRotation(NewRotation);
+					}
+				}
+			}
+
+			UpdateDesiredArmLocation(bDoCollisionTest, bEnableCameraLag, bEnableCameraRotationLag, DeltaSeconds);
+		}
+	}
+}
+
+void UCSInteractionComponent::RotateActorAroundPoint(AActor* RotateActor, FVector RotationPoint, FRotator AddRotation)
+{
+	FVector Loc = RotateActor->GetActorLocation() - RotationPoint;
+	FVector RotatedLoc = AddRotation.RotateVector(Loc);
+
+	FVector NewLoc = RotationPoint + RotatedLoc;
+	
+	/* Compose the rotators, use Quats to avoid gimbal lock */
+	FQuat AQuat = FQuat(RotateActor->GetActorRotation());
+	FQuat BQuat = FQuat(AddRotation);
+
+	FRotator NewRot = FRotator(BQuat*AQuat);
+
+	RotateActor->SetActorLocationAndRotation(NewLoc, NewRot);
+}
+
+void UCSInteractionComponent::Pickup()
+{
+	/* Drop if we are already carrying an Actor */
+	if (GetIsCarryingActor())
+	{
+		Drop();
+		return;
+	} 
+
+	if (!GetOwner()->HasAuthority())
+	{
+		ServerPickup();
+		return;
+	}
+
+	AActor* FocusActor = GetActorInView();
+	OnPickupMulticast(FocusActor);
+}
+
+void UCSInteractionComponent::OnPickupMulticast_Implementation(AActor* FocusActor)
+{
+	if (FocusActor && FocusActor->IsRootComponentMovable())
+	{
+		/* Find the static mesh (if any) to disable physics simulation while carried
+		Filter by objects that are physically simulated and can therefor be picked up */
+		UStaticMeshComponent* MeshComp = Cast<UStaticMeshComponent>(FocusActor->GetComponentByClass(UStaticMeshComponent::StaticClass()));
+		if (MeshComp && MeshComp->IsSimulatingPhysics())
+		{
+			MeshComp->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+			MeshComp->SetSimulatePhysics(false);
+		}
+
+		FocusActor->AttachToComponent(this, FAttachmentTransformRules::KeepWorldTransform);
+	}
+}
+
+void UCSInteractionComponent::Drop()
+{
+	if (!GetOwner()->HasAuthority())
+	{
+		ServerDrop();
+	}
+
+	OnDropMulticast();
+}
+
+void UCSInteractionComponent::ServerDrop_Implementation()
+{
+	Drop();
+}
+
+
+bool UCSInteractionComponent::ServerDrop_Validate()
+{
+	return true;
+}
+
+
+void UCSInteractionComponent::ServerThrow_Implementation()
+{
+	Throw();
+}
+
+
+bool UCSInteractionComponent::ServerThrow_Validate()
+{
+	return true;
+}
+
+
+void UCSInteractionComponent::ServerPickup_Implementation()
+{
+	Pickup();
+}
+
+
+bool UCSInteractionComponent::ServerPickup_Validate()
+{
+	return true;
+}
+
+
+void UCSInteractionComponent::ServerRotate_Implementation(float DirectionYaw, float DirectionRoll)
+{
+	Rotate(DirectionYaw, DirectionRoll);
+}
+
+
+bool UCSInteractionComponent::ServerRotate_Validate(float DirectionYaw, float DirectionRoll)
+{
+	return true;
+}
+
+void UCSInteractionComponent::OnRotateMulticast_Implementation(float DirectionYaw, float DirectionRoll)
+{
+	AActor* CarriedActor = GetCarriedActor();
+	if (CarriedActor)
+	{
+		/* Retrieve the object center */
+		FVector RootOrigin = GetCarriedActor()->GetRootComponent()->Bounds.Origin;
+		FRotator DeltaRot = FRotator(0, DirectionYaw * RotateSpeed, DirectionRoll * RotateSpeed);
+
+		RotateActorAroundPoint(CarriedActor, RootOrigin, DeltaRot);
 	}
 }

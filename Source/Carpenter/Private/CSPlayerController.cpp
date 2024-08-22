@@ -31,7 +31,7 @@ void ACSPlayerController::ToggleItemMenu()
 	UCSInteractionComponent* InteractionComp = PlayerCharacter->FindComponentByClass<UCSInteractionComponent>();
 
 
-	if (PlayerCharacter && InteractionComp->OnFocuActor)
+/*	if (PlayerCharacter && InteractionComp->OnFocuActor)
 	{
 		AActor* FocusedActor = InteractionComp->OnFocuActor;
 		if (FocusedActor && FocusedActor->IsA<ACSComputer>())
@@ -51,7 +51,7 @@ void ACSPlayerController::ToggleItemMenu()
 				}
 			}
 		}
-	}
+	}*/
 	
 }
 

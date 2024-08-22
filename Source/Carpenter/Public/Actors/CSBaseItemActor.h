@@ -7,6 +7,7 @@
 #include "CSBaseItemActor.generated.h"
 
 class ACarpenterCharacter;
+class USoundCue;
 
 UCLASS()
 class CARPENTER_API ACSBaseItemActor : public ACSBaseInteractiableActor
@@ -17,38 +18,39 @@ class CARPENTER_API ACSBaseItemActor : public ACSBaseInteractiableActor
 public:
 	ACSBaseItemActor();
 
-	void Interact_Implementation(APawn* InstigatorPawn);
+	void BeginPlay() override;
 
-	void DropItem_Implementation(APawn* InstigatorPawn);
+	UPROPERTY(EditDefaultsOnly, Category = "Sound")
+	USoundCue* PickupSound;
 
-	void OnActorLoaded_Implementation();
-
-	
-	
-	UPROPERTY(BlueprintReadOnly)
-	FName ItemName;
-
-	UPROPERTY(BlueprintReadOnly)
-	UMaterial* ItemMaterial;
-
-	UPROPERTY(BlueprintReadOnly)
-	UStaticMesh* ChangedMesh;
+	UFUNCTION()
+	void OnRep_IsActive();
 
 protected:
 
-	UPROPERTY(ReplicatedUsing="OnRep_OnEquipped", BlueprintReadOnly) 
-	bool bOnEquipped;
+	UPROPERTY(Transient, ReplicatedUsing = OnRep_IsActive)
+	bool bIsActive;
 
-	UFUNCTION()
-	void OnRep_OnEquipped();
+	virtual void RespawnPickup();
 
-	UPROPERTY(ReplicatedUsing="OnRep_OnDropped", BlueprintReadOnly)
-	bool bOnDropped;
+	virtual void OnPickedUp();
 
-	UFUNCTION()
-	void OnRep_OnDropped();
+	virtual void OnRespawned();
 
-	ACarpenterCharacter* PlayerCharacter;
+public:
+
+	virtual void OnUsed(APawn* InstigatorPawn) override;
 	
+	UPROPERTY(EditDefaultsOnly, Category = "Pickup")
+	bool bStartActive;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Pickup")
+	bool bAllowRespawn;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Pickup")
+	float RespawnDelay;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Pickup")
+	float RespawnDelayRange;
 
 };

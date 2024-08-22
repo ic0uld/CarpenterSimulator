@@ -7,6 +7,7 @@
 #include "CSPaintBox.generated.h"
 
 class UMaterial;
+class UCSInteractionComponent;
 
 UCLASS()
 class CARPENTER_API ACSPaintBox : public ACSBaseInteractiableActor
@@ -17,16 +18,7 @@ public:
 
 	ACSPaintBox();
 	
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, ReplicatedUsing=OnRep_ItemMaterial)
-	UMaterial* ItemMaterial;
 
-	void Interact_Implementation(APawn* InstigatorPawn);
-
-
-protected:
-	
-	UFUNCTION()
-	void OnRep_ItemMaterial();
 	
 	
 };

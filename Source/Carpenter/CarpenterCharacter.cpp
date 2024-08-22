@@ -2,6 +2,7 @@
 
 #include "CarpenterCharacter.h"
 #include "CarpenterProjectile.h"
+#include "DrawDebugHelpers.h"
 #include "Animation/AnimInstance.h"
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
@@ -28,9 +29,16 @@ ACarpenterCharacter::ACarpenterCharacter()
 	BaseTurnRate = 45.f;
 	BaseLookUpRate = 45.f;
 
+	SpringArmComponent = CreateDefaultSubobject<USpringArmComponent>("SpringArm");
+	SpringArmComponent->SetupAttachment(GetCapsuleComponent());
+
+	//Interact implement
+	CarriedObjectComp = CreateDefaultSubobject<UCSInteractionComponent>(TEXT("CarriedObjectComp"));
+	CarriedObjectComp->SetupAttachment(GetRootComponent());
+
 	// Create a CameraComponent	
 	FirstPersonCameraComponent = CreateDefaultSubobject<UCameraComponent>(TEXT("FirstPersonCamera"));
-	FirstPersonCameraComponent->SetupAttachment(GetCapsuleComponent());
+	FirstPersonCameraComponent->SetupAttachment(SpringArmComponent);
 	FirstPersonCameraComponent->SetRelativeLocation(FVector(-39.56f, 1.75f, 64.f)); // Position the camera
 	FirstPersonCameraComponent->bUsePawnControlRotation = true;
 
@@ -49,9 +57,9 @@ ACarpenterCharacter::ACarpenterCharacter()
 	//Create an Attribute Comp
 	AttributeComponent = CreateDefaultSubobject<UCSAttributeComponent>("AttributeComponent");
 
-	// Create an InteractıonComponent
-	InteractionComponent= CreateDefaultSubobject<UCSInteractionComponent>("InteractionComponent");
-
+	MaxUseDistance = 500;
+	//DropWeaponMaxDistance = 100;
+	bHasNewFocus = true;
 
 }
 
@@ -68,7 +76,7 @@ void ACarpenterCharacter::SetupPlayerInputComponent(class UInputComponent* Playe
 	PlayerInputComponent->BindAction("Jump", IE_Released, this, &ACharacter::StopJumping);
 
 	//Interact
-	PlayerInputComponent->BindAction("Interact", IE_Pressed, this, &ACarpenterCharacter::Interact);
+	PlayerInputComponent->BindAction("Interact", IE_Pressed, this, &ACarpenterCharacter::OnToggleCarryActor);
 
 	//Drop Item
 	PlayerInputComponent->BindAction("DropItem", IE_Pressed, this, &ACarpenterCharacter::DropItem);
@@ -90,6 +98,43 @@ void ACarpenterCharacter::SetupPlayerInputComponent(class UInputComponent* Playe
 	PlayerInputComponent->BindAxis("LookUp", this, &APawn::AddControllerPitchInput);
 	PlayerInputComponent->BindAxis("LookUpRate", this, &ACarpenterCharacter::LookUpAtRate);
 }
+
+
+void ACarpenterCharacter::Tick(float DeltaTime)
+{
+	Super::Tick(DeltaTime);
+
+
+	if (Controller && Controller->IsLocalController())
+	{
+		ACSBaseInteractiableActor* Usable = GetUsableInView();
+
+		// End Focus
+		if (FocusedUsableActor != Usable)
+		{
+			if (FocusedUsableActor)
+			{
+				FocusedUsableActor->OnEndFocus();
+			}
+
+			bHasNewFocus = true;
+		}
+
+		// Assign new Focus
+		FocusedUsableActor = Usable;
+
+		// Start Focus.
+		if (Usable)
+		{
+			if (bHasNewFocus)
+			{
+				Usable->OnBeginFocus();
+				bHasNewFocus = false;
+			}
+		}
+	}
+}
+
 
 
 
@@ -166,16 +211,99 @@ void ACarpenterCharacter::Interact()
 {
 	if (InteractionComponent)
 	{
-		InteractionComponent->PrimaryInteract();
+		//InteractionComponent->PrimaryInteract();
 	}
+}
+
+void ACarpenterCharacter::ServerEquipButtonPressed_Implementation()
+{
 }
 
 void ACarpenterCharacter::DropItem()
 {
 	if (InteractionComponent)
 	{
-		InteractionComponent->DropItem();
+		//InteractionComponent->DropItem();
 	}
+}
+
+void ACarpenterCharacter::PaintItem()
+{
+	if (InteractionComponent)
+	{
+		//InteractionComponent->PaintItem();
+	}
+}
+
+void ACarpenterCharacter::OnToggleCarryActor()
+{
+	CarriedObjectComp->Pickup();
+}
+
+void ACarpenterCharacter::Use()
+{
+	// Only allow on server. If called on client push this request to the server
+	if (HasAuthority())
+	{
+		ACSBaseInteractiableActor* Usable = GetUsableInView();
+		if (Usable)
+		{
+			Usable->OnUsed(this);
+		}
+	}
+	else
+	{
+		ServerUse();
+	}
+}
+
+void ACarpenterCharacter::ServerUse_Implementation()
+{
+	Use();
+}
+
+bool ACarpenterCharacter::ServerUse_Validate()
+{
+	return true;
+}
+
+ACSBaseInteractiableActor* ACarpenterCharacter::GetUsableInView() const
+{
+		FVector CamLoc;
+		FRotator CamRot;
+
+		if (Controller == nullptr)
+			return nullptr;
+
+		Controller->GetPlayerViewPoint(CamLoc, CamRot);
+		const FVector TraceStart = CamLoc;
+		const FVector Direction = CamRot.Vector();
+		const FVector TraceEnd = TraceStart + (Direction * MaxUseDistance);
+
+		FCollisionQueryParams TraceParams(TEXT("TraceUsableActor"), true, this);
+		TraceParams.bReturnPhysicalMaterial = false;
+
+		/* Not tracing complex uses the rough collision instead making tiny objects easier to select. */
+		TraceParams.bTraceComplex = false;
+
+		FHitResult Hit(ForceInit);
+		GetWorld()->LineTraceSingleByChannel(Hit, TraceStart, TraceEnd, ECC_Visibility, TraceParams);
+
+	// Draw debug line from camera to trace end
+	DrawDebugLine(GetWorld(), TraceStart, TraceEnd, FColor::Green, false, 2.0f, 0, 1.0f);
+
+	// If something was hit, draw a debug sphere at the hit locatione
+	if (Hit.bBlockingHit)
+	{
+		DrawDebugSphere(GetWorld(), Hit.Actor->GetActorLocation(), 10.0f, 12, FColor::Red, false, 2.0f);
+	}
+	
+
+		return Cast<ACSBaseInteractiableActor>(Hit.GetActor());
+
+	
+	
+	
 }
 
 bool ACarpenterCharacter::EnableTouchscreenMovement(class UInputComponent* PlayerInputComponent)
@@ -188,3 +316,5 @@ bool ACarpenterCharacter::EnableTouchscreenMovement(class UInputComponent* Playe
 	
 	return false;
 }
+
+

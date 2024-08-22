@@ -8,20 +8,29 @@
 #include "CSBaseInteractiableActor.generated.h"
 
 class UStaticMeshComponent;
+class ACarpenterCharacter;
 
 UCLASS()
-class CARPENTER_API ACSBaseInteractiableActor : public AActor, public ICSGameplayInterface
+class CARPENTER_API ACSBaseInteractiableActor : public AActor
 {
 	GENERATED_BODY()
 	
 public:	
 	ACSBaseInteractiableActor();
-	
-	virtual void Interact_Implementation(APawn* InstigatorPawn) override;
+	UPROPERTY(VisibleAnywhere, Category = "Mesh")
+	UStaticMeshComponent* MeshComp;
 
-	virtual void DropItem_Implementation(APawn* InstigatorPawn) override;
+public:
 	
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta=(ExposeOnSpawn))
-	UStaticMeshComponent* BaseMesh;
+	virtual void OnBeginFocus();
+	
+	virtual void OnEndFocus();
 
+	virtual void OnUsed(APawn* InstigatorPawn);
+
+	FORCEINLINE UStaticMeshComponent* GetMeshComponent() const
+	{
+		return MeshComp;
+	}
 };
+

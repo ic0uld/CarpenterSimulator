@@ -5,59 +5,97 @@
 #include "CoreMinimal.h"
 #include "Actors/CSBaseItemActor.h"
 #include "Components/ActorComponent.h"
+#include "GameFramework/SpringArmComponent.h"
 #include "CSInteractionComponent.generated.h"
 
 class USWorldUserWidget;
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
-class CARPENTER_API UCSInteractionComponent : public UActorComponent
+class CARPENTER_API UCSInteractionComponent : public USpringArmComponent
 {
 	GENERATED_BODY()
 
-public:
+	UCSInteractionComponent();
 
-	void PrimaryInteract();
+private:
 
-	void DropItem();
-	
+	AActor* GetActorInView();
 
-	UPROPERTY(BlueprintReadOnly)
-	AActor* OnFocuActor;
+	AActor* GetCarriedActor();
 
-	UPROPERTY()
-	ACSBaseItemActor* EquippedItem;
-
-	
+	/* Return the StaticMeshComponent of the carried Actor */
+	UStaticMeshComponent* GetCarriedMeshComp();
 
 protected:
 
-	UFUNCTION(Server, Reliable)
-	void ServerInteract(AActor* InFocus);
-	
-	UFUNCTION(Server, Reliable)
-	void ServerDropItem(AActor* InFocus);
+	void TickComponent(float DeltaSeconds, enum ELevelTick TickType, FActorComponentTickFunction *ThisTickFunction) override;
 
-	void FindCloseActor();
+	/* Rotation speed */
+	UPROPERTY(EditDefaultsOnly, Category = "Movement")
+	float RotateSpeed;
 
-	UPROPERTY(EditDefaultsOnly, Category = "Trace")
-	float TraceDistance;
+	void RotateActorAroundPoint(AActor* RotateActor, FVector RotationPoint, FRotator AddRotation);
 
-	UPROPERTY(EditDefaultsOnly, Category = "Trace")
-	float TraceRadius;
+public:
 
-	UPROPERTY(EditDefaultsOnly, Category = "Trace")
-	TEnumAsByte<ECollisionChannel> CollisionChannel;
+	UPROPERTY(EditDefaultsOnly, Category = "Pickup")
+	float MaxPickupDistance;
 
-	UPROPERTY(EditDefaultsOnly, Category = "UI")
-	TSubclassOf<USWorldUserWidget> DefaultWidgetClass;
+	/* Attach the current view focus object that is allowed to be picked up to the spring arm */
+	void Pickup();
 
-	UPROPERTY()
-	USWorldUserWidget* DefaultWidgetInstance;
+	UFUNCTION(Server, Reliable, WithValidation)
+	void ServerPickup();
 
-public:	
+	void ServerPickup_Implementation();
 
-	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
+	bool ServerPickup_Validate();
 
-	UCSInteractionComponent();
-	
+	UFUNCTION(Reliable, NetMulticast)
+	void OnPickupMulticast(AActor* FocusActor);
+
+	void OnPickupMulticast_Implementation(AActor* FocusActor);
+
+	/* Release the currently attached object, if not blocked by environment */
+	void Drop();
+
+	UFUNCTION(Server, Reliable, WithValidation)
+	void ServerDrop();
+
+	void ServerDrop_Implementation();
+
+	bool ServerDrop_Validate();
+
+	UFUNCTION(Reliable, NetMulticast)
+	void OnDropMulticast();
+
+	void OnDropMulticast_Implementation();
+
+	/* Throw any currently carried Actor in the current view direction */
+	void Throw();
+
+	UFUNCTION(Server, Reliable, WithValidation)
+	void ServerThrow();
+
+	void ServerThrow_Implementation();
+
+	bool ServerThrow_Validate();
+
+	/* Is currently holding an Actor */
+	bool GetIsCarryingActor();
+
+	/* Rotate the carried Actor */
+	void Rotate(float DirectionYaw, float DirectionRoll);
+
+	UFUNCTION(Server, Reliable, WithValidation)
+	void ServerRotate(float DirectionYaw, float DirectionRoll);
+
+	void ServerRotate_Implementation(float DirectionYaw, float DirectionRoll);
+
+	bool ServerRotate_Validate(float DirectionYaw, float DirectionRoll);
+
+	UFUNCTION(Reliable, NetMulticast)
+	void OnRotateMulticast(float DirectionYaw, float DirectionRoll);
+
+	void OnRotateMulticast_Implementation(float DirectionYaw, float DirectionRoll);
 };

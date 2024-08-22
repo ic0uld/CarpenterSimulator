@@ -33,6 +33,9 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent)
 	void DropItem(APawn* InstigatorPawn);
 
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent)
+	void PaintItem(APawn* InstigatorPawn);
+
 	
 	
 };

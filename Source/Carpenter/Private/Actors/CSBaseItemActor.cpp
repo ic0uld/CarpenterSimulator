@@ -1,89 +1,94 @@
 #include "Actors/CSBaseItemActor.h"
 #include "Carpenter/CarpenterCharacter.h"
 #include "Components/CSInteractionComponent.h"
+#include "Kismet/GameplayStatics.h"
 #include "Net/UnrealNetwork.h"
+#include "Sound/SoundCue.h"
 
 ACSBaseItemActor::ACSBaseItemActor()
 {
-    bReplicates = true;
-    bOnEquipped = false;
-    bOnDropped = false;
+	/* Ignore Pawn - this is to prevent objects shooting through the level or pawns glitching on top of small items. */
+	MeshComp->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Ignore);
 
-    PlayerCharacter = nullptr;
+	bIsActive = false;
+	bStartActive = true;
+	bAllowRespawn = true;
+	RespawnDelay = 5.0f;
+	RespawnDelayRange = 5.0f;
+
+	SetReplicates(true);
 }
 
-void ACSBaseItemActor::Interact_Implementation(APawn* InstigatorPawn)
+void ACSBaseItemActor::BeginPlay()
 {
-    PlayerCharacter = Cast<ACarpenterCharacter>(InstigatorPawn);
-  
-   
-        bOnEquipped = !bOnEquipped;
-        OnRep_OnEquipped();
-    
+	Super::BeginPlay();
+
+	//if (bStartActive)
+	{
+		RespawnPickup();
+	}
 }
 
-void ACSBaseItemActor::DropItem_Implementation(APawn* InstigatorPawn)
+void ACSBaseItemActor::OnRep_IsActive()
 {
-
-    PlayerCharacter = Cast<ACarpenterCharacter>(InstigatorPawn);
-    
-    bOnDropped = !bOnDropped;
-    OnRep_OnDropped();
+	if (bIsActive)
+	{
+		OnRespawned();
+	}
+	else
+	{
+		OnPickedUp();
+	}
 }
 
-void ACSBaseItemActor::OnActorLoaded_Implementation()
+void ACSBaseItemActor::RespawnPickup()
 {
-    OnRep_OnEquipped();
-    OnRep_OnDropped();
+	bIsActive = true;
+	OnRespawned();
 }
 
-
-void ACSBaseItemActor::OnRep_OnEquipped()
+void ACSBaseItemActor::OnPickedUp()
 {
-    if (PlayerCharacter)
-    {
-        UCSInteractionComponent* InteractionComp = PlayerCharacter->FindComponentByClass<UCSInteractionComponent>();
-
-        if (InteractionComp && !InteractionComp->EquippedItem)
-        {
-            BaseMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-            BaseMesh->SetCollisionProfileName("NoCollision");
-
-            FAttachmentTransformRules AttachRules(EAttachmentRule::SnapToTarget, true);
-            BaseMesh->AttachToComponent(PlayerCharacter->GetMesh(), AttachRules, TEXT("HandSocketName"));
-            
-            if (USkeletalMeshComponent* SkeletalMesh = PlayerCharacter->Mesh1P)
-            {
-                this->AttachToComponent(SkeletalMesh, AttachRules, TEXT("ItemSnapLocation"));
-                InteractionComp->EquippedItem = this;
-                bOnEquipped = !bOnEquipped;
-            }
-        }
-    }
+	if (MeshComp)
+	{
+		MeshComp->SetVisibility(false);
+		MeshComp->SetSimulatePhysics(false);
+		MeshComp->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	}
 }
 
-void ACSBaseItemActor::OnRep_OnDropped()
+void ACSBaseItemActor::OnRespawned()
 {
-    UCSInteractionComponent* InteractionComp = PlayerCharacter->FindComponentByClass<UCSInteractionComponent>();
-    if (InteractionComp)
-    {
-        bOnDropped = false;
-        InteractionComp->EquippedItem = nullptr;
-        BaseMesh->DetachFromComponent(FDetachmentTransformRules::KeepWorldTransform);
-        BaseMesh->SetSimulatePhysics(true);
-        BaseMesh->SetEnableGravity(true);
-        BaseMesh->SetCollisionProfileName("BlockAllDynamic");
-        BaseMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
-    }
-
-    
+	if (MeshComp)
+	{
+		MeshComp->SetVisibility(true);
+		MeshComp->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+	}
 }
 
-void ACSBaseItemActor::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+void ACSBaseItemActor::OnUsed(APawn* InstigatorPawn)
 {
-    Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+	Super::OnUsed(InstigatorPawn);
 
-    DOREPLIFETIME(ACSBaseItemActor, bOnEquipped);
-    DOREPLIFETIME(ACSBaseItemActor, bOnDropped);
+	UGameplayStatics::PlaySoundAtLocation(this, PickupSound, GetActorLocation());
+
+	bIsActive = false;
+	OnPickedUp();
+
+	if (bAllowRespawn)
+	{
+		FTimerHandle RespawnTimerHandle;
+		GetWorld()->GetTimerManager().SetTimer(RespawnTimerHandle, this, &ACSBaseItemActor::RespawnPickup, RespawnDelay + FMath::RandHelper(RespawnDelayRange), false);
+	}
+	else
+	{
+		Destroy();
+	}
 }
 
+void ACSBaseItemActor::GetLifetimeReplicatedProps(TArray<FLifetimeProperty> & OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(ACSBaseItemActor, bIsActive);
+}

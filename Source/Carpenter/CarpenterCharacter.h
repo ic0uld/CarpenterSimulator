@@ -10,6 +10,7 @@
 class UInputComponent;
 class USkeletalMeshComponent;
 class USceneComponent;
+class USpringArmComponent;
 class UCameraComponent;
 class UCSInteractionComponent;
 class UCSAttributeComponent;
@@ -26,6 +27,9 @@ class ACarpenterCharacter : public ACharacter
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
 	UCameraComponent* FirstPersonCameraComponent;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
+	USpringArmComponent* SpringArmComponent;
 	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
     UCSInteractionComponent* InteractionComponent;
@@ -47,6 +51,12 @@ public:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components" )
 	UCSAttributeComponent* AttributeComponent;
+
+	UPROPERTY(VisibleAnywhere, Category = "Camera")
+	class UCSInteractionComponent* CarriedObjectComp;
+
+	USkeletalMeshComponent* GetMesh1P() const { return Mesh1P; }
+	UCameraComponent* GetFirstPersonCameraComponent() const { return FirstPersonCameraComponent; }
 	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category=Camera)
 	float BaseTurnRate;
@@ -60,11 +70,38 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void DropItem();
 
+	UFUNCTION(BlueprintCallable)
+	void PaintItem();
+
+	/* Input mapped function for carry object component */
+	void OnToggleCarryActor();
+
+	/* Use the usable actor currently in focus, if any */
+	virtual void Use();
+
+	UFUNCTION(Server, Reliable, WithValidation)
+	void ServerUse();
+
+	void ServerUse_Implementation();
+
+	bool ServerUse_Validate();
+
+	class ACSBaseInteractiableActor* GetUsableInView() const;
+
+	/*Max distance to use/focus on actors. */
+	UPROPERTY(EditDefaultsOnly, Category = "ObjectInteraction")
+	float MaxUseDistance;
+
+	/* True only in first frame when focused on a new usable actor. */
+	bool bHasNewFocus;
+
+	class ACSBaseInteractiableActor* FocusedUsableActor;
+
 
 
 protected:
 	
-
+	virtual void Tick(float DeltaSeconds) override;
 	
 	void MoveForward(float Val);
 	
@@ -83,10 +120,11 @@ protected:
 
 	bool EnableTouchscreenMovement(UInputComponent* InputComponent);
 
-public:
-
-	USkeletalMeshComponent* GetMesh1P() const { return Mesh1P; }
-	UCameraComponent* GetFirstPersonCameraComponent() const { return FirstPersonCameraComponent; }
+private:
+	
+	UFUNCTION(Server, Reliable)
+	void ServerEquipButtonPressed();
+	
 
 };
 
