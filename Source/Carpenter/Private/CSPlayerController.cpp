@@ -27,16 +27,11 @@ void ACSPlayerController::ToggleItemMenu()
 
 	
 	ACarpenterCharacter* PlayerCharacter = CastChecked<ACarpenterCharacter>(GetPawn());
+	
 
-	UCSInteractionComponent* InteractionComp = PlayerCharacter->FindComponentByClass<UCSInteractionComponent>();
-
-
-/*	if (PlayerCharacter && InteractionComp->OnFocuActor)
+	if (PlayerCharacter)
 	{
-		AActor* FocusedActor = InteractionComp->OnFocuActor;
-		if (FocusedActor && FocusedActor->IsA<ACSComputer>())
-		{
-			ACSComputer* Computer = Cast<ACSComputer>(FocusedActor);
+		ACSComputer* Computer = Cast<ACSComputer>(PlayerCharacter->GetUsableInView());
 			if (Computer)
 			{
 				
@@ -49,9 +44,9 @@ void ACSPlayerController::ToggleItemMenu()
 					SetInputMode(FInputModeUIOnly());
 		
 				}
-			}
 		}
-	}*/
+		
+	}
 	
 }
 

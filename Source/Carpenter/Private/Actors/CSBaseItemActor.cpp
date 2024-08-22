@@ -1,14 +1,11 @@
 #include "Actors/CSBaseItemActor.h"
 #include "Carpenter/CarpenterCharacter.h"
-#include "Components/CSInteractionComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "Net/UnrealNetwork.h"
 #include "Sound/SoundCue.h"
 
 ACSBaseItemActor::ACSBaseItemActor()
 {
-	/* Ignore Pawn - this is to prevent objects shooting through the level or pawns glitching on top of small items. */
-	MeshComp->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Ignore);
 
 	bIsActive = false;
 	bStartActive = true;
@@ -22,11 +19,7 @@ ACSBaseItemActor::ACSBaseItemActor()
 void ACSBaseItemActor::BeginPlay()
 {
 	Super::BeginPlay();
-
-	//if (bStartActive)
-	{
-		RespawnPickup();
-	}
+	
 }
 
 void ACSBaseItemActor::OnRep_IsActive()
@@ -41,28 +34,60 @@ void ACSBaseItemActor::OnRep_IsActive()
 	}
 }
 
+
+void ACSBaseItemActor::OnRep_MyPawn()
+{
+	//
+}
+
 void ACSBaseItemActor::RespawnPickup()
 {
 	bIsActive = true;
 	OnRespawned();
 }
 
-void ACSBaseItemActor::OnPickedUp()
+void ACSBaseItemActor::OnPickedUp_Implementation()
 {
 	if (MeshComp)
 	{
-		MeshComp->SetVisibility(false);
 		MeshComp->SetSimulatePhysics(false);
-		MeshComp->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		MeshComp->SetEnableGravity(false);
+		SetCollision("NoCollision");
+		USkeletalMeshComponent* PawnMesh = MyPawn->GetMesh1P();
+		MeshComp->AttachToComponent(PawnMesh, FAttachmentTransformRules::SnapToTargetNotIncludingScale, MyPawn->GetMesh1P()->GetSocketBoneName("AttachLocation"));
+		MyPawn->CurrentItem = this;
+	
 	}
 }
+
 
 void ACSBaseItemActor::OnRespawned()
 {
 	if (MeshComp)
 	{
 		MeshComp->SetVisibility(true);
-		MeshComp->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+		SetCollision("BlockAllDynamic");
+		MeshComp->SetSimulatePhysics(true);
+		MeshComp->SetEnableGravity(true);
+		DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
+
+		MyPawn->CurrentItem = nullptr;
+	}
+}
+
+void ACSBaseItemActor::SetCollision_Implementation(FName NewCollisionProfile)
+{
+	if (MeshComp)
+	{
+		MeshComp->SetCollisionProfileName(NewCollisionProfile);
+	}
+}
+
+void ACSBaseItemActor::ChangeMaterial_Implementation(UMaterialInterface* NewMaterial)
+{
+	if (MeshComp)
+	{
+		MeshComp->SetMaterial(0, NewMaterial);
 	}
 }
 
@@ -70,25 +95,19 @@ void ACSBaseItemActor::OnUsed(APawn* InstigatorPawn)
 {
 	Super::OnUsed(InstigatorPawn);
 
+	MyPawn = Cast<ACarpenterCharacter>(InstigatorPawn);
+
 	UGameplayStatics::PlaySoundAtLocation(this, PickupSound, GetActorLocation());
 
 	bIsActive = false;
 	OnPickedUp();
-
-	if (bAllowRespawn)
-	{
-		FTimerHandle RespawnTimerHandle;
-		GetWorld()->GetTimerManager().SetTimer(RespawnTimerHandle, this, &ACSBaseItemActor::RespawnPickup, RespawnDelay + FMath::RandHelper(RespawnDelayRange), false);
-	}
-	else
-	{
-		Destroy();
-	}
+	
 }
 
 void ACSBaseItemActor::GetLifetimeReplicatedProps(TArray<FLifetimeProperty> & OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
+	DOREPLIFETIME(ACSBaseItemActor, MyPawn);
 	DOREPLIFETIME(ACSBaseItemActor, bIsActive);
 }

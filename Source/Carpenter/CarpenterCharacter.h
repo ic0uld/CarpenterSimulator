@@ -76,6 +76,13 @@ public:
 	/* Input mapped function for carry object component */
 	void OnToggleCarryActor();
 
+
+	UPROPERTY(Transient, ReplicatedUsing = OnRep_CurrentItem)
+	class ACSBaseItemActor* CurrentItem;
+
+	UFUNCTION()
+	void OnRep_CurrentItem(ACSBaseItemActor* NewItem);
+	
 	/* Use the usable actor currently in focus, if any */
 	virtual void Use();
 
@@ -85,7 +92,16 @@ public:
 	void ServerUse_Implementation();
 
 	bool ServerUse_Validate();
+	
+	void DropCurrentItem();
 
+	UFUNCTION(Reliable, Server, WithValidation)
+	void ServerDropCurrentItem();
+
+	void ServerDropCurrentItem_Implementation();
+
+	bool ServerDropCurrentItem_Validate();
+	
 	class ACSBaseInteractiableActor* GetUsableInView() const;
 
 	/*Max distance to use/focus on actors. */
@@ -95,6 +111,7 @@ public:
 	/* True only in first frame when focused on a new usable actor. */
 	bool bHasNewFocus;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components" )
 	class ACSBaseInteractiableActor* FocusedUsableActor;
 
 

@@ -55,23 +55,23 @@ void UCSOrderAction::SpawnItem(ACharacter* InstigatorCharacter)
 			if (SpawnedItem)
 			{
 				// Set the Static Mesh based on the ItemType
-				/*switch (Computer->ItemType)
+				switch (Computer->ItemType)
 				{
 				case EItemType::Chair:
-					SpawnedItem->BaseMesh->SetStaticMesh(Computer->ChairMesh);
+					SpawnedItem->MeshComp->SetStaticMesh(Computer->ChairMesh);
 					break;
 				case EItemType::Door:
-					SpawnedItem->BaseMesh->SetStaticMesh(Computer->DoorMesh);
+					SpawnedItem->MeshComp->SetStaticMesh(Computer->DoorMesh);
 					break;
 				case EItemType::Cabinet:
-					SpawnedItem->BaseMesh->SetStaticMesh(Computer->CabinetMesh);
+					SpawnedItem->MeshComp->SetStaticMesh(Computer->CabinetMesh);
 					break;
 				case EItemType::Table:
-					SpawnedItem->BaseMesh->SetStaticMesh(Computer->TableMesh);
+					SpawnedItem->MeshComp->SetStaticMesh(Computer->TableMesh);
 					break;
 				default:
 					break;
-				}*/
+				}
 
 				GEngine->AddOnScreenDebugMessage(-1, 1.0f, FColor::Green, TEXT("Spawned"));
 			}

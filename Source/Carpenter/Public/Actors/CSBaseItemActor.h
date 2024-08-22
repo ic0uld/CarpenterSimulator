@@ -26,17 +26,34 @@ public:
 	UFUNCTION()
 	void OnRep_IsActive();
 
+	virtual void OnRespawned();
+	
+	UFUNCTION(NetMulticast, Reliable)
+	void ChangeMaterial(UMaterialInterface* NewMaterial);
+
+
+
 protected:
 
 	UPROPERTY(Transient, ReplicatedUsing = OnRep_IsActive)
 	bool bIsActive;
+	
+	UPROPERTY(Transient, ReplicatedUsing = OnRep_MyPawn)
+	class ACarpenterCharacter* MyPawn;
+
+	UFUNCTION()
+	void OnRep_MyPawn();
 
 	virtual void RespawnPickup();
 
+	UFUNCTION(Server, Reliable)
 	virtual void OnPickedUp();
 
-	virtual void OnRespawned();
+	UFUNCTION(NetMulticast, Reliable)
+	void SetCollision(FName NewCollisionProfile);
 
+
+	
 public:
 
 	virtual void OnUsed(APawn* InstigatorPawn) override;

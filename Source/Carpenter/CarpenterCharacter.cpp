@@ -1,6 +1,7 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
 #include "CarpenterCharacter.h"
+
 #include "CarpenterProjectile.h"
 #include "DrawDebugHelpers.h"
 #include "Animation/AnimInstance.h"
@@ -14,6 +15,7 @@
 #include "XRMotionControllerBase.h" // for FXRMotionControllerBase::RightHandSourceId
 #include "Components/CSAttributeComponent.h"
 #include "Components/CSInteractionComponent.h"
+#include "Net/UnrealNetwork.h"
 
 DEFINE_LOG_CATEGORY_STATIC(LogFPChar, Warning, All);
 
@@ -76,10 +78,10 @@ void ACarpenterCharacter::SetupPlayerInputComponent(class UInputComponent* Playe
 	PlayerInputComponent->BindAction("Jump", IE_Released, this, &ACharacter::StopJumping);
 
 	//Interact
-	PlayerInputComponent->BindAction("Interact", IE_Pressed, this, &ACarpenterCharacter::OnToggleCarryActor);
+	PlayerInputComponent->BindAction("Interact", IE_Pressed, this, &ACarpenterCharacter::Use);
 
 	//Drop Item
-	PlayerInputComponent->BindAction("DropItem", IE_Pressed, this, &ACarpenterCharacter::DropItem);
+	PlayerInputComponent->BindAction("DropItem", IE_Pressed, this, &ACarpenterCharacter::DropCurrentItem);
 
 
 	// Enable touchscreen input
@@ -129,7 +131,14 @@ void ACarpenterCharacter::Tick(float DeltaTime)
 			if (bHasNewFocus)
 			{
 				Usable->OnBeginFocus();
+				FocusedUsableActor = Cast<ACSBaseItemActor>(Usable);
+				GEngine->AddOnScreenDebugMessage(-1, 0.0f, FColor::Red, "Find Focus Actor to interact.");
 				bHasNewFocus = false;
+				if (FocusedUsableActor)
+				{
+					FocusedUsableActor->SetOwner(this);
+				}
+				
 			}
 		}
 	}
@@ -240,9 +249,13 @@ void ACarpenterCharacter::OnToggleCarryActor()
 	CarriedObjectComp->Pickup();
 }
 
+void ACarpenterCharacter::OnRep_CurrentItem(ACSBaseItemActor* NewItem)
+{
+	CurrentItem = NewItem;
+}
+
 void ACarpenterCharacter::Use()
 {
-	// Only allow on server. If called on client push this request to the server
 	if (HasAuthority())
 	{
 		ACSBaseInteractiableActor* Usable = GetUsableInView();
@@ -269,42 +282,71 @@ bool ACarpenterCharacter::ServerUse_Validate()
 
 ACSBaseInteractiableActor* ACarpenterCharacter::GetUsableInView() const
 {
-		FVector CamLoc;
-		FRotator CamRot;
+	FVector CamLoc;
+	FRotator CamRot;
 
-		if (Controller == nullptr)
-			return nullptr;
+	if (Controller == nullptr)
+		return nullptr;
 
-		Controller->GetPlayerViewPoint(CamLoc, CamRot);
-		const FVector TraceStart = CamLoc;
-		const FVector Direction = CamRot.Vector();
-		const FVector TraceEnd = TraceStart + (Direction * MaxUseDistance);
+	Controller->GetPlayerViewPoint(CamLoc, CamRot);
 
-		FCollisionQueryParams TraceParams(TEXT("TraceUsableActor"), true, this);
-		TraceParams.bReturnPhysicalMaterial = false;
+	const FVector TraceStart = CamLoc;
+	const FVector Direction = CamRot.Vector();
+	const FVector TraceEnd = TraceStart + (Direction * MaxUseDistance);
 
-		/* Not tracing complex uses the rough collision instead making tiny objects easier to select. */
-		TraceParams.bTraceComplex = false;
+	FCollisionObjectQueryParams ObjectQueryParams;
+	ObjectQueryParams.AddObjectTypesToQuery(ECC_WorldDynamic);
 
-		FHitResult Hit(ForceInit);
-		GetWorld()->LineTraceSingleByChannel(Hit, TraceStart, TraceEnd, ECC_Visibility, TraceParams);
+	FCollisionShape Shape;
+	Shape.SetSphere(15.0f);
+	
+	FHitResult Hit(ForceInit);
+	
+	bool bBlockingHit = GetWorld()->SweepSingleByObjectType(
+		Hit,TraceStart,TraceEnd,FQuat::Identity,ObjectQueryParams, Shape);
 
-	// Draw debug line from camera to trace end
 	DrawDebugLine(GetWorld(), TraceStart, TraceEnd, FColor::Green, false, 2.0f, 0, 1.0f);
 
-	// If something was hit, draw a debug sphere at the hit locatione
-	if (Hit.bBlockingHit)
+	if (bBlockingHit)
 	{
-		DrawDebugSphere(GetWorld(), Hit.Actor->GetActorLocation(), 10.0f, 12, FColor::Red, false, 2.0f);
+		if (Hit.GetActor())
+		{
+		
+			DrawDebugSphere(GetWorld(), Hit.ImpactPoint, 50.0f, 12, FColor::Red, false, 0.0f);
+			
+		}
+		
 	}
-	
-
-		return Cast<ACSBaseInteractiableActor>(Hit.GetActor());
-
-	
-	
-	
+	 
+	return Cast<ACSBaseInteractiableActor>(Hit.GetActor());
 }
+
+void ACarpenterCharacter::DropCurrentItem()
+{
+	if (!HasAuthority())
+	{
+		ServerDropCurrentItem();
+		return;
+	}
+
+	if (CurrentItem)
+	{
+		CurrentItem->OnRespawned();
+	}
+}
+
+
+void ACarpenterCharacter::ServerDropCurrentItem_Implementation()
+{
+	DropCurrentItem();
+}
+
+
+bool ACarpenterCharacter::ServerDropCurrentItem_Validate()
+{
+	return true;
+}
+
 
 bool ACarpenterCharacter::EnableTouchscreenMovement(class UInputComponent* PlayerInputComponent)
 {
@@ -315,6 +357,14 @@ bool ACarpenterCharacter::EnableTouchscreenMovement(class UInputComponent* Playe
 	}
 	
 	return false;
+}
+
+void ACarpenterCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(ACarpenterCharacter, CurrentItem);
+
 }
 
 
