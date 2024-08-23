@@ -28,7 +28,6 @@ public:
 	UFUNCTION()
 	void OnRep_IsActive();
 
-	virtual void OnRespawned();
 
 
 
@@ -36,21 +35,19 @@ protected:
 
 	UPROPERTY(Transient, ReplicatedUsing = OnRep_IsActive)
 	bool bIsActive;
-	
-	UPROPERTY(EditDefaultsOnly, Transient, ReplicatedUsing = OnRep_CahgedMaterial)
-	UMaterialInterface*  ChangedMaterial;
+
+	UPROPERTY(EditDefaultsOnly, Transient, ReplicatedUsing = OnRep_PaintName)
+	FName PaintName;
 	
 	UPROPERTY(Transient, ReplicatedUsing = OnRep_MyPawn)
 	class ACarpenterCharacter* MyPawn;
 
 	UFUNCTION()
 	void OnRep_MyPawn();
-
-	UFUNCTION()
-	void OnRep_CahgedMaterial();
 	
-
-	virtual void RespawnPickup();
+	UFUNCTION()
+	void OnRep_PaintName();
+	
 
 	UFUNCTION(Server, Reliable)
 	virtual void OnPickedUp();

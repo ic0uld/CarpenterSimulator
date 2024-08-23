@@ -49,9 +49,6 @@ public:
 	UPROPERTY(VisibleDefaultsOnly, Category=Mesh)
 	USkeletalMeshComponent* Mesh1P;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components" )
-	UCSAttributeComponent* AttributeComponent;
-
 	UPROPERTY(VisibleAnywhere, Category = "Camera")
 	class UCSInteractionComponent* CarriedObjectComp;
 

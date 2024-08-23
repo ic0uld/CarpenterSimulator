@@ -3,20 +3,12 @@
 #include "CoreMinimal.h"
 #include "CSBaseItemActor.h"
 #include "Actors/CSBaseInteractiableActor.h"
+#include "Carpenter/Carpenter.h"
 #include "Components/CSAcitonComponent.h"
 #include "CSComputer.generated.h"
 
 class UWidgetComponent;
 class ATargetPoint;
-
-UENUM(BlueprintType)
-enum class EItemType : uint8
-{
-	Chair UMETA(DisplayName = "Chair"),
-	Door UMETA(DisplayName = "Door"),
-	Cabinet UMETA(DisplayName = "Cabinet"),
-	Table UMETA(DisplayName = "Table")
-};
 
 UCLASS()
 class CARPENTER_API ACSComputer : public ACSBaseInteractiableActor

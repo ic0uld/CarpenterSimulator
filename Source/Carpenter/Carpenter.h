@@ -6,6 +6,15 @@
 
 DECLARE_STATS_GROUP(TEXT("STANFORD_Game"), STATGROUP_STANFORD, STATCAT_Advanced);
 
+UENUM(BlueprintType)
+enum class EItemType : uint8
+{
+	Chair UMETA(DisplayName = "Chair"),
+	Door UMETA(DisplayName = "Door"),
+	Cabinet UMETA(DisplayName = "Cabinet"),
+	Table UMETA(DisplayName = "Table")
+};
+
 
 static void LogOnScreen(UObject* WorldContext, FString Msg, FColor Color = FColor::White, float Duration = 5.0f)
 {

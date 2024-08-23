@@ -28,9 +28,11 @@ protected:
 	
 	UPROPERTY(EditAnywhere, Category = "Spawn")
 	USoundBase* CastingSound;
+	
 
-	UFUNCTION()
+	UFUNCTION(Server, Reliable)
 	void SpawnItem(ACharacter* InstigatorCharacter);
+
 
 public:
 

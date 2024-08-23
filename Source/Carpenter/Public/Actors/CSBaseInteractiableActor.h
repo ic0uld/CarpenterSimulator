@@ -17,7 +17,7 @@ class CARPENTER_API ACSBaseInteractiableActor : public AActor
 	
 public:	
 	ACSBaseInteractiableActor();
-	UPROPERTY(VisibleAnywhere, Category = "Mesh")
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Mesh")
 	UStaticMeshComponent* MeshComp;
 
 public:

@@ -56,9 +56,6 @@ ACarpenterCharacter::ACarpenterCharacter()
 	// Create an Action Management Comp
 	ActionComp = CreateDefaultSubobject<UCSAcitonComponent>("ActionComp");
 
-	//Create an Attribute Comp
-	AttributeComponent = CreateDefaultSubobject<UCSAttributeComponent>("AttributeComponent");
-
 	MaxUseDistance = 500;
 	//DropWeaponMaxDistance = 100;
 	bHasNewFocus = true;

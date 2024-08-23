@@ -26,34 +26,20 @@ void ACSPaintBox::BeginPlay()
 
 void ACSPaintBox::OnRep_IsActive()
 {
-	if (bIsActive)
-	{
-		OnRespawned();
-	}
-	else
-	{
-		OnPickedUp();
-	}
+	OnPickedUp();
 }
 
-void ACSPaintBox::OnRespawned()
-{
-}
 
 void ACSPaintBox::OnRep_MyPawn()
 {
 	
 }
 
-void ACSPaintBox::OnRep_CahgedMaterial()
+
+void ACSPaintBox::OnRep_PaintName()
 {
 }
 
-void ACSPaintBox::RespawnPickup()
-{
-	bIsActive = true;
-	OnRespawned();
-}
 
 void ACSPaintBox::OnPickedUp_Implementation()
 {
@@ -69,9 +55,20 @@ void ACSPaintBox::ChangeMaterial_Implementation()
 {
 	if (MyPawn)
 	{
-		UMaterialInterface* NewMaterial = MeshComp->GetMaterial(0);
+		if (MeshComp)
+		{
+			UMaterialInterface* NewMaterial = MeshComp->GetMaterial(0);
+			if (NewMaterial)
+			{
+				if (MyPawn->CurrentItem)
+				{
+					MyPawn->CurrentItem->ChangeMaterial(NewMaterial, PaintName);
+				}
+			}
 		
-		MyPawn->CurrentItem->ChangeMaterial(NewMaterial); 
+			
+		}
+	
 	}
 	
 }
@@ -93,5 +90,5 @@ void ACSPaintBox::GetLifetimeReplicatedProps(TArray<FLifetimeProperty> & OutLife
 
 	DOREPLIFETIME(ACSPaintBox, MyPawn);
 	DOREPLIFETIME(ACSPaintBox, bIsActive);
-	DOREPLIFETIME(ACSPaintBox, ChangedMaterial)
+	DOREPLIFETIME(ACSPaintBox, PaintName)
 }

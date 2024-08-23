@@ -1,4 +1,6 @@
 #include "Actors/CSBaseItemActor.h"
+
+#include "IDetailTreeNode.h"
 #include "Carpenter/CarpenterCharacter.h"
 #include "Kismet/GameplayStatics.h"
 #include "Net/UnrealNetwork.h"
@@ -32,6 +34,11 @@ void ACSBaseItemActor::OnRep_IsActive()
 	{
 		OnPickedUp();
 	}
+}
+
+void ACSBaseItemActor::OnRep_ItemType(EItemType NewType)
+{
+	ItemType = NewType;
 }
 
 
@@ -75,6 +82,16 @@ void ACSBaseItemActor::OnRespawned()
 	}
 }
 
+void ACSBaseItemActor::ChangeMesh_Implementation(UStaticMesh* NewMesh, EItemType NewType)
+{
+	if (MeshComp)
+	{
+		OnRep_ItemType(NewType);
+		MeshComp->SetStaticMesh(NewMesh);
+	}
+
+}
+
 void ACSBaseItemActor::SetCollision_Implementation(FName NewCollisionProfile)
 {
 	if (MeshComp)
@@ -83,11 +100,12 @@ void ACSBaseItemActor::SetCollision_Implementation(FName NewCollisionProfile)
 	}
 }
 
-void ACSBaseItemActor::ChangeMaterial_Implementation(UMaterialInterface* NewMaterial)
+void ACSBaseItemActor::ChangeMaterial_Implementation(UMaterialInterface* NewMaterial, FName ColorName)
 {
 	if (MeshComp)
 	{
 		MeshComp->SetMaterial(0, NewMaterial);
+		OnRep_PaintName(ColorName);
 	}
 }
 
@@ -102,6 +120,11 @@ void ACSBaseItemActor::OnUsed(APawn* InstigatorPawn)
 	bIsActive = false;
 	OnPickedUp();
 	
+}
+
+void ACSBaseItemActor::OnRep_PaintName(FName NewColor)
+{
+	PaintName = NewColor;
 }
 
 void ACSBaseItemActor::GetLifetimeReplicatedProps(TArray<FLifetimeProperty> & OutLifetimeProps) const

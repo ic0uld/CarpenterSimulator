@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Actors/CSBaseInteractiableActor.h"
+#include "Carpenter/Carpenter.h"
 #include "CSBaseItemActor.generated.h"
 
 class ACarpenterCharacter;
@@ -20,16 +21,25 @@ public:
 
 	void BeginPlay() override;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, ReplicatedUsing = OnRep_ItemType, meta = (ExposeOnSpawn))
+	EItemType ItemType;
+	
 	UPROPERTY(EditDefaultsOnly, Category = "Sound")
 	USoundCue* PickupSound;
 
 	UFUNCTION()
 	void OnRep_IsActive();
 
+	UFUNCTION()
+	void OnRep_ItemType(EItemType NewType);
+
 	virtual void OnRespawned();
 	
 	UFUNCTION(NetMulticast, Reliable)
-	void ChangeMaterial(UMaterialInterface* NewMaterial);
+	void ChangeMaterial(UMaterialInterface* NewMaterial, FName ColorName);
+
+	UFUNCTION(NetMulticast, Reliable)
+	void ChangeMesh(UStaticMesh* NewMesh,EItemType NewType);
 
 
 
@@ -70,4 +80,12 @@ public:
 	UPROPERTY(EditDefaultsOnly, Category = "Pickup")
 	float RespawnDelayRange;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, ReplicatedUsing = OnRep_PaintName,  Category = "Paint")
+	FName PaintName;
+
+	UFUNCTION()
+	void OnRep_PaintName(FName NewColor);
+	
 };
+
+
